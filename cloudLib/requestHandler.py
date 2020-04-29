@@ -15,10 +15,10 @@ _LOGGER = logging.getLogger(__name__)
 class RequestHandler:
     """Handles requests to the Crownstone lib."""
 
-    def __init__(self, websession: ClientSession, access_token: str = None) -> None:
+    def __init__(self, websession: ClientSession, login_data: dict, access_token: str = None) -> None:
         self.access_token = access_token
         self.websession = websession
-        self.login_data: Optional[dict] = None
+        self.login_data = login_data
 
     async def post(
             self,

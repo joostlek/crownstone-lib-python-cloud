@@ -50,7 +50,7 @@ class CrownstoneCloud:
             "password": password_to_hash(password),
         }
         # Create request handler & login
-        self.request = RequestHandler(self.websession)
+        self.request = RequestHandler(websession=self.websession, login_data=data)
         result = await self.request.post('users', 'login', json=data)
 
         # Set access token & user id
