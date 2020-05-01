@@ -1,5 +1,5 @@
 from cloudLib._RequestHandlerInstance import RequestHandler
-from typing import Optional
+from typing import Optional, ValuesView
 import logging
 
 _LOGGER = logging.Logger(__name__)
@@ -9,8 +9,13 @@ class Crownstones:
     """Handler for the crownstones of a sphere"""
 
     def __init__(self, sphere_id: str) -> None:
+        """Init"""
         self.crownstones = {}
         self.sphere_id = sphere_id
+
+    def values(self) -> ValuesView:
+        """Return a view with the sphere objects in dict, for iteration"""
+        return self.crownstones.values()
 
     async def sync(self) -> None:
         """Get the crownstones and their state for this sphere from the cloud"""
@@ -31,17 +36,14 @@ class Crownstones:
         return None
 
     def find_by_id(self, crownstone_id) -> object or None:
-        """Search for a crownstone by name and return crownstone object if found"""
+        """Search for a crownstone by id and return crownstone object if found"""
         return self.crownstones[crownstone_id]
-
-    def update(self, event_data) -> None:
-        """Update crownstone data using event data"""
 
 
 class Crownstone:
     """Represents a Crownstone"""
 
-    def __init__(self, data) -> None:
+    def __init__(self, data: dict) -> None:
         self.data = data
         self.state: Optional[float] = None
 
@@ -50,7 +52,7 @@ class Crownstone:
         return self.data['name']
 
     @property
-    def unique_id(self) -> str:
+    def unique_id(self) -> int:
         return self.data['uid']
 
     @property
@@ -66,7 +68,7 @@ class Crownstone:
         return self.data['firmwareVersion']
 
     @property
-    def dimming(self) -> bool:
+    def dimming_enabled(self) -> bool:
         return self.data['dimmingEnabled']
 
     async def turn_on(self) -> None:
@@ -85,7 +87,7 @@ class Crownstone:
 
         :param percentage: the brightness percentage (0 - 100)
         """
-        if self.dimming:
+        if self.dimming_enabled:
             if percentage < 0 or percentage > 100:
                 raise ValueError("Enter a percentage between 0 and 100")
             else:

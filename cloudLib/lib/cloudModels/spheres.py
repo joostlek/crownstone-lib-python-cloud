@@ -1,4 +1,9 @@
 from cloudLib._RequestHandlerInstance import RequestHandler
+from cloudLib.lib.cloudModels.crownstones import Crownstones
+from cloudLib.lib.cloudModels.locations import Locations
+from cloudLib.lib.cloudModels.users import Users
+from cloudLib.lib.containerClasses.keys import Keys
+from typing import Optional, ValuesView
 
 
 class Spheres:
@@ -8,6 +13,10 @@ class Spheres:
         """Init"""
         self.spheres = {}
         self.user_id = user_id
+
+    def values(self) -> ValuesView:
+        """Return a view with the sphere objects in dict, for iteration"""
+        return self.spheres.values()
 
     async def sync(self) -> None:
         """Get the spheres for the user from the cloud"""
@@ -27,17 +36,24 @@ class Spheres:
         """Search for a sphere by id and return sphere object if found"""
         return self.spheres[sphere_id]
 
-    def update(self, event_data) -> None:
-        """Update sphere data using event data"""
+    async def get_keys(self) -> None:
+        """Get the user keys for the spheres, that can be used for BLE (optional)"""
+        keys = await RequestHandler.get('users', 'keysV2', model_id=self.user_id)
+        for key_set in keys:
+            for sphere in self.spheres:
+                if key_set['sphereId'] == sphere.cloud_id:
+                    sphere.keys = Keys(key_set)
 
 
 class Sphere:
     """Represents a Sphere"""
 
-    def __init__(self, data):
+    def __init__(self, data: dict):
         self.data = data
-        self.crownstones = None
-        self.locations = None
+        self.crownstones = Crownstones(self.cloud_id)
+        self.locations = Locations(self.cloud_id)
+        self.users = Users(self.cloud_id)
+        self.keys: Optional[Keys] = None
 
     @property
     def name(self) -> str:

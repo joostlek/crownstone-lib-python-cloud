@@ -97,7 +97,7 @@ class RequestHandler:
                 await self.request(method, url, json=json)
             return data
 
-    async def raise_on_error(self, data):
+    async def raise_on_error(self, data) -> bool:
         """Check for error message"""
         if isinstance(data, dict) and 'error' in data:
             error = data['error']
@@ -117,6 +117,7 @@ class RequestHandler:
                 _LOGGER.error(error['message'])
 
             await self.websession.close()
+        return False
 
     async def refresh_token(self):
         response = await self.post('users', 'login', json=self.login_data)
