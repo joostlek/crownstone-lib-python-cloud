@@ -1,5 +1,4 @@
 import logging
-import hashlib
 from aiohttp import ClientSession
 from typing import Any, Optional
 from cloudLib.const import BASE_URL
@@ -15,10 +14,10 @@ _LOGGER = logging.getLogger(__name__)
 class RequestHandler:
     """Handles requests to the Crownstone lib."""
 
-    def __init__(self, websession: ClientSession, login_data: dict, access_token: str = None) -> None:
-        self.access_token = access_token
-        self.websession = websession
-        self.login_data = login_data
+    def __init__(self) -> None:
+        self.access_token: Optional[str] = None
+        self.websession: Optional[ClientSession] = None
+        self.login_data: Optional[dict] = None
 
     async def post(
             self,
@@ -84,7 +83,7 @@ class RequestHandler:
         :param value: the value to be put for the command. e.g 'switchState', 1
         :return: Dictionary with the response from the lib.
         """
-        url = f'{BASE_URL}{model}/{model_id}/{endpoint}?{command}={value}&access_token={self.access_token}'
+        url = f'{BASE_URL}{model}/{model_id}/{endpoint}?{command}={str(value)}&access_token={self.access_token}'
 
         return await self.request('put', url)
 

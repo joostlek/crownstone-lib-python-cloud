@@ -3,7 +3,7 @@ import logging
 import asyncio
 import aiohttp
 from typing import Optional, Coroutine
-from cloudLib.requestHandler import RequestHandler
+from cloudLib._RequestHandlerInstance import RequestHandler
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -12,10 +12,9 @@ class CrownstoneCloud:
     """Create a Crownstone lib hub"""
 
     def __init__(self) -> None:
-        self.websession: Optional[aiohttp.ClientSession] = None
         self.loop: Optional[asyncio.AbstractEventLoop] = None
-        self.request: Optional[RequestHandler] = None
         self.user_id = None
+        self.spheres = None
 
     def start(self, func: Coroutine) -> None:
         """Start"""
@@ -39,7 +38,7 @@ class CrownstoneCloud:
     ) -> None:
         """Start with existing web session & loop"""
         self.loop = loop
-        self.websession = websession
+        RequestHandler.websession = websession
         self.loop.run_until_complete(func)
 
     async def login(self, email: str, password: str) -> None:
@@ -49,12 +48,12 @@ class CrownstoneCloud:
             "email": email,
             "password": password_to_hash(password),
         }
-        # Create request handler & login
-        self.request = RequestHandler(websession=self.websession, login_data=data)
-        result = await self.request.post('users', 'login', json=data)
+        # login
+        RequestHandler.login_data = data
+        result = await RequestHandler.post('users', 'login', json=data)
 
         # Set access token & user id
-        self.request.access_token = result['id']
+        RequestHandler.access_token = result['id']
         self.user_id = result['userId']
 
         _LOGGER.info("Login to Crownstone Cloud successful")
