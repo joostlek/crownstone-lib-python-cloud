@@ -121,6 +121,7 @@ For example for a house:
 * Bedroom
 * Garage
 * Bathroom
+
 To get the locations for your sphere use:
 ```python
 sphere = cloud.spheres.find('MySphere')
@@ -142,6 +143,7 @@ Example Crownstones:
 * Lamp
 * Charger
 * Television
+
 to get the crownstones for your sphere:
 ```python
 sphere = cloud.spheres.find('MySphere')
