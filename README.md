@@ -127,7 +127,7 @@ To get the locations for your sphere use:
 sphere = cloud.spheres.find('MySphere')
 await sphere.locations.sync()
 ```
-For the presence tracking, an advanded algorithm detects whenever a user is on a specific location.<br>
+For the presence tracking, an advanced algorithm detects whenever a user is on a specific location.<br>
 The presence is saved for each location in a list. The list contains names of the people who are present.<br>
 To print the present people list:
 ```python
