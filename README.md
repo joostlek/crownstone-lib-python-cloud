@@ -172,6 +172,7 @@ A user can have 3 roles:
 * Admin
 * Member
 * Guest
+
 Each role has different privileges.<br>
 Users can have similar names. To view the info of a user's first name in a sphere:
 ```python
