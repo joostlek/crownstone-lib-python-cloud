@@ -96,9 +96,7 @@ Getting the keys is optional and not included in the general sync.<br>
 The keys are returned as a dictionary.
 To get the keys for a sphere:
 ```python
-# select a sphere to get the keys from
 sphere = cloud.spheres.find('MySphere')
-# get the keys
 keys = await sphere.get_keys()
 ```
 
