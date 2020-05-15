@@ -1,8 +1,8 @@
 import logging
 from aiohttp import ClientSession
 from typing import Any, Optional
-from cloudLib.const import BASE_URL
-from cloudLib.exceptions import (
+from crownstone_cloud.const import BASE_URL
+from crownstone_cloud.exceptions import (
     CrownstoneAuthenticationError,
     CrownstoneUnknownError,
     AuthError
@@ -90,11 +90,11 @@ class RequestHandler:
     async def request(self, method: str, url: str, json: dict = None) -> dict:
         """Make request and check data for errors"""
         async with self.websession.request(method, url, json=json) as result:
-            result.raise_for_status()
             data = await result.json()
             refresh = await self.raise_on_error(data)
             if refresh:
-                await self.request(method, url, json=json)
+                new_url = url.replace(url.split('access_token=', 1)[1], self.access_token)
+                await self.request(method, new_url, json=json)
             return data
 
     async def raise_on_error(self, data) -> bool:
@@ -105,12 +105,14 @@ class RequestHandler:
             if 'code' in error:
                 error_type = error['code']
                 try:
-                    AuthError(error_type)
-                    if error_type == AuthError.AUTHORIZATION_REQUIRED.value:
+                    if error_type == 'INVALID_TOKEN':
+                        _LOGGER.warning("Token expired. Refreshing now...")
                         await self.refresh_token()
                         return True  # re-run the request
                     else:
-                        raise CrownstoneAuthenticationError(type=AuthError(error_type))
+                        for type, message in AuthError.items():
+                            if type == error_type:
+                                raise CrownstoneAuthenticationError(type, message)
                 except ValueError:
                     raise CrownstoneUnknownError("Unknown error occurred.")
             else:
@@ -120,5 +122,6 @@ class RequestHandler:
         return False
 
     async def refresh_token(self):
+        self.access_token = None
         response = await self.post('users', 'login', json=self.login_data)
         self.access_token = response['id']

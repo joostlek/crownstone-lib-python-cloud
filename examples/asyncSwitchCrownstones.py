@@ -1,0 +1,19 @@
+"""
+This is an example how to switch a crownstone using the crownstone python cloud lib.
+
+Last update by Ricardo Steijn on 15-5-2020
+"""
+from crownstone_cloud.lib.cloud import CrownstoneCloud
+import asyncio
+
+
+async def main():
+    # init cloud
+    cloud = CrownstoneCloud('email', 'password')
+    await cloud.initialize()
+
+    # get a crownstone by name and switch it on
+    crownstone = cloud.get_crownstone('awesomeCrownstone')
+    await crownstone.turn_on()
+
+asyncio.run(main())

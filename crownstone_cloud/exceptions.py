@@ -1,12 +1,11 @@
 """Exceptions for crownstone lib connection lib"""
-from enum import Enum
 
 
-class AuthError(Enum):
-    LOGIN_FAILED = 'LOGIN_FAILED'
-    USERNAME_EMAIL_REQUIRED = 'USERNAME_EMAIL_REQUIRED'
-    LOGIN_FAILED_EMAIL_NOT_VERIFIED = 'LOGIN_FAILED_EMAIL_NOT_VERIFIED'
-    AUTHORIZATION_REQUIRED = 'AUTHORIZATION_REQUIRED'
+AuthError = {
+    'LOGIN_FAILED': 'Wrong email or password provided',
+    'USERNAME_EMAIL_REQUIRED': 'Email or password not provided',
+    'LOGIN_FAILED_EMAIL_NOT_VERIFIED': 'Email has not been verified, please do that first',
+}
 
 
 class CrownstoneAuthenticationError(Exception):

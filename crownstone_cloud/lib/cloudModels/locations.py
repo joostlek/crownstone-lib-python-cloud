@@ -1,17 +1,23 @@
-from cloudLib._RequestHandlerInstance import RequestHandler
+from crownstone_cloud._RequestHandlerInstance import RequestHandler
 from typing import Optional
+import asyncio
 
 
 class Locations:
     """Handler for the locations of a sphere"""
 
-    def __init__(self, sphere_id: str) -> None:
+    def __init__(self, loop: asyncio.AbstractEventLoop, sphere_id: str) -> None:
         """Init"""
-        self.locations = {}
+        self.loop = loop
+        self.locations: Optional[dict] = None
         self.sphere_id = sphere_id
 
-    async def sync(self) -> None:
-        """Get the locations and presence from the cloud"""
+    async def update(self) -> None:
+        """
+        Get the locations and presence from the cloud
+        This will replace all current data with new data from the cloud
+        """
+        self.locations = {}
         location_data = await RequestHandler.get('Spheres', 'ownedLocations', model_id=self.sphere_id)
         for location in location_data:
             self.locations[location['id']] = Location(location)
@@ -22,6 +28,10 @@ class Locations:
                 for location in self.locations.values():
                     if present_location == location.cloud_id:
                         location.present_people.append(presence['userId'])
+
+    def update_sync(self) -> None:
+        """Sync function for updating the location data"""
+        self.loop.run_until_complete(self.update())
 
     def find(self, location_name: str) -> object or None:
         """Search for a sphere by name and return sphere object if found"""

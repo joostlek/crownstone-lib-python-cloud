@@ -1,6 +1,7 @@
-from cloudLib._RequestHandlerInstance import RequestHandler
+from crownstone_cloud._RequestHandlerInstance import RequestHandler
 from typing import Optional, ValuesView
 import logging
+import asyncio
 
 _LOGGER = logging.Logger(__name__)
 
@@ -8,24 +9,33 @@ _LOGGER = logging.Logger(__name__)
 class Crownstones:
     """Handler for the crownstones of a sphere"""
 
-    def __init__(self, sphere_id: str) -> None:
+    def __init__(self, loop: asyncio.AbstractEventLoop, sphere_id: str) -> None:
         """Init"""
-        self.crownstones = {}
+        self.loop = loop
+        self.crownstones: Optional[dict] = None
         self.sphere_id = sphere_id
 
     def values(self) -> ValuesView:
         """Return a view with the sphere objects in dict, for iteration"""
         return self.crownstones.values()
 
-    async def sync(self) -> None:
-        """Get the crownstones and their state for this sphere from the cloud"""
+    async def update(self) -> None:
+        """
+        Get the crownstones and their state for this sphere from the cloud
+        This will replace all current data from the cloud with new data
+        """
+        self.crownstones = {}
         crownstone_data = await RequestHandler.get('Spheres', 'ownedStones', model_id=self.sphere_id)
         for crownstone in crownstone_data:
-            self.crownstones[crownstone['id']] = Crownstone(crownstone)
+            self.crownstones[crownstone['id']] = Crownstone(self.loop, crownstone)
 
         for crownstone in self.crownstones.values():
             crownstone_state = await RequestHandler.get('Stones', 'currentSwitchState', model_id=crownstone.cloud_id)
             crownstone.state = crownstone_state['switchState']
+
+    def update_sync(self) -> None:
+        """Sync function for updating the crownstone data"""
+        self.loop.run_until_complete(self.update())
 
     def find(self, crownstone_name: str) -> object or None:
         """Search for a crownstone by name and return crownstone object if found"""
@@ -43,9 +53,11 @@ class Crownstones:
 class Crownstone:
     """Represents a Crownstone"""
 
-    def __init__(self, data: dict) -> None:
+    def __init__(self, loop: asyncio.AbstractEventLoop, data: dict) -> None:
+        self.loop = loop
         self.data = data
         self.state: Optional[float] = None
+        self.dimming_enabled = False
 
     @property
     def name(self) -> str:
@@ -67,19 +79,23 @@ class Crownstone:
     def sw_version(self) -> str:
         return self.data['firmwareVersion']
 
-    @property
-    def dimming_enabled(self) -> bool:
-        return self.data['dimmingEnabled']
-
     async def turn_on(self) -> None:
-        """Turn this crownstone on"""
+        """Async turn this crownstone on"""
         await RequestHandler.put('Stones', 'setSwitchStateRemotely', model_id=self.cloud_id,
                                  command='switchState', value=1)
 
+    def turn_on_sync(self) -> None:
+        """Sync turn on this crownstone"""
+        self.loop.run_until_complete(self.turn_on())
+
     async def turn_off(self) -> None:
-        """Turn this crownstone off"""
+        """Async turn this crownstone off"""
         await RequestHandler.put('Stones', 'setSwitchStateRemotely', model_id=self.cloud_id,
                                  command='switchState', value=0)
+
+    def turn_off_sync(self) -> None:
+        """Sync turn off this crownstone"""
+        self.loop.run_until_complete(self.turn_off())
 
     async def set_brightness(self, percentage: int) -> None:
         """
@@ -96,3 +112,11 @@ class Crownstone:
                                          command='switchState', value=brightness)
         else:
             _LOGGER.error("Dimming is not enabled for this crownstone. Go to the crownstone app to enable it")
+
+    def set_brightness_sync(self, percentage: int) -> None:
+        """
+        Sync set the brightness of this crownstone, if dimming enabled
+
+        :param percentage: the brightness percentage (0 - 100)
+        """
+        self.loop.run_until_complete(self.set_brightness(percentage))

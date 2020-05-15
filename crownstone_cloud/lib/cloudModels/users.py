@@ -1,21 +1,31 @@
-from cloudLib._RequestHandlerInstance import RequestHandler
+from crownstone_cloud._RequestHandlerInstance import RequestHandler
 from typing import Optional
+import asyncio
 
 
 class Users:
     """Handler for the users in a sphere"""
 
-    def __init__(self, sphere_id: str) -> None:
+    def __init__(self, loop: asyncio.AbstractEventLoop, sphere_id: str) -> None:
         """Init"""
-        self.users = {}
+        self.loop = loop
+        self.users: Optional[dict] = None
         self.sphere_id = sphere_id
 
-    async def sync(self) -> None:
-        """Get the users for this sphere from the cloud"""
+    async def update(self) -> None:
+        """
+        Get the users for this sphere from the cloud
+        This will replace all current data with new data from the cloud
+        """
+        self.users = {}
         user_data = await RequestHandler.get('Spheres', 'users', model_id=self.sphere_id)
         for role, users in user_data.items():
             for user in users:
                 self.users[user['id']] = User(user, role)
+
+    def update_sync(self) -> None:
+        """Sync function for updating the users data"""
+        self.loop.run_until_complete(self.update())
 
     def find_by_first_name(self, first_name: str) -> list:
         """Search for a user by first name and return a list with the users found"""
