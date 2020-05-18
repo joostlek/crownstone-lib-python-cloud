@@ -79,7 +79,7 @@ crownstone = cloud.get_crownstone('awesomeCrownstone')
 crownstone.turn_on_sync()
 ```
 
-### Initialisation
+### Initialization
 Crownstone cloud is initialized with 2 arguments:
 * User email
 * User password
