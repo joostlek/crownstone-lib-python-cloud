@@ -12,6 +12,10 @@ class Locations:
         self.locations: Optional[dict] = None
         self.sphere_id = sphere_id
 
+    def __iter__(self):
+        """Iterate over locations"""
+        return iter(self.locations.values())
+
     async def update(self) -> None:
         """
         Get the locations and presence from the cloud

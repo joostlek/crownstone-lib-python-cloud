@@ -16,4 +16,9 @@ async def main():
     crownstone = cloud.get_crownstone('awesomeCrownstone')
     await crownstone.turn_on()
 
+    # switch all crownstones in a sphere to on:
+    sphere = cloud.spheres.find('awesomeSphere')
+    for crownstone in sphere.crownstones:
+        await crownstone.turn_on()
+
 asyncio.run(main())

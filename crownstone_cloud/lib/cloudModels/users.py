@@ -12,6 +12,10 @@ class Users:
         self.users: Optional[dict] = None
         self.sphere_id = sphere_id
 
+    def __iter__(self):
+        """Iterate over users"""
+        return iter(self.users.values())
+
     async def update(self) -> None:
         """
         Get the users for this sphere from the cloud

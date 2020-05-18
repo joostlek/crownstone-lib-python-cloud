@@ -2,7 +2,7 @@ from crownstone_cloud._RequestHandlerInstance import RequestHandler
 from crownstone_cloud.lib.cloudModels.crownstones import Crownstones
 from crownstone_cloud.lib.cloudModels.locations import Locations
 from crownstone_cloud.lib.cloudModels.users import Users
-from typing import ValuesView, Optional
+from typing import Optional
 import asyncio
 
 
@@ -15,9 +15,9 @@ class Spheres:
         self.spheres: Optional[dict] = None
         self.user_id = user_id
 
-    def values(self) -> ValuesView:
-        """Return a view with the sphere objects in dict, for iteration"""
-        return self.spheres.values()
+    def __iter__(self):
+        """Iterate over spheres"""
+        return iter(self.spheres.values())
 
     async def update(self) -> None:
         """

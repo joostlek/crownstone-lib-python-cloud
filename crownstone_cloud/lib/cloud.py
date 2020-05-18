@@ -20,7 +20,7 @@ class CrownstoneCloud:
             loop: asyncio.AbstractEventLoop = None,
             websession: aiohttp.ClientSession = None
     ) -> None:
-        self.login_data = {'email': email, 'password': password_to_hash(password), 'ttl': 5}
+        self.login_data = {'email': email, 'password': password_to_hash(password)}
         self.loop = loop or asyncio.get_event_loop()
         # set request handler params
         RequestHandler.websession = websession or aiohttp.ClientSession(loop=loop)
@@ -61,7 +61,7 @@ class CrownstoneCloud:
         await self.spheres.update()
 
         # get the data from the sphere attributes
-        for sphere in self.spheres.values():
+        for sphere in self.spheres:
             await asyncio.gather(
                 sphere.crownstones.update(),
                 sphere.locations.update(),
@@ -71,14 +71,14 @@ class CrownstoneCloud:
 
     def get_crownstone(self, crownstone_name) -> Crownstone:
         """Get a crownstone by name without specifying a sphere"""
-        for sphere in self.spheres.values():
-            for crownstone in sphere.crownstones.values():
+        for sphere in self.spheres:
+            for crownstone in sphere.crownstones:
                 if crownstone.name == crownstone_name:
                     return crownstone
 
     def get_crownstone_by_id(self, crownstone_id) -> Crownstone:
         """Get a crownstone by id without specifying a sphere"""
-        for sphere in self.spheres.values():
+        for sphere in self.spheres:
             return sphere.crownstones[crownstone_id]
 
     def cleanup(self) -> None:

@@ -15,9 +15,9 @@ class Crownstones:
         self.crownstones: Optional[dict] = None
         self.sphere_id = sphere_id
 
-    def values(self) -> ValuesView:
-        """Return a view with the sphere objects in dict, for iteration"""
-        return self.crownstones.values()
+    def __iter__(self):
+        """Iterate over crownstones"""
+        return iter(self.crownstones.values())
 
     async def update(self) -> None:
         """
