@@ -84,7 +84,7 @@ Crownstone cloud is initialized with 2 arguments:
 * User email
 * User password
 
-If you do not yet have a Crownstone account, go to (My Crownstone)[my.crownstone.rocks] to set one up.
+If you do not yet have a Crownstone account, go to [My Crownstone](my.crownstone.rocks) to set one up.
 The email and password are used to re-login after an access token has expired.
 ```Python
 cloud = CrownstoneCloud('email', 'password')
@@ -222,7 +222,7 @@ A User has the following fields in the cloud lib:
 
 ### Sphere
 
-#### get_keys() -> dict
+#### get_keys() -> Dict
 > Async function. Returns a dict with the keys of this sphere. The keys can be used for BLE connectivity with the Crownstones.
 
 ### Crownstones
@@ -244,7 +244,7 @@ A User has the following fields in the cloud lib:
 #### turn_off()
 > Async function. Send a command to turn a Crownstone off. To make this work make sure to be in the selected sphere and have Bluetooth enabled on your phone.
 
-#### set_brightness(percentage: int)
+#### set_brightness(percentage: Int)
 > Async function. Send a command to set a Crownstone to a given brightness level. To make this work make sure to be in the selected sphere and have Bluetooth enabled on your phone.
 
 ### Locations
@@ -263,10 +263,10 @@ A User has the following fields in the cloud lib:
 #### update()
 > Async function. Sync the Users with the cloud for a sphere. Doing this will replace all the current user data with that of the cloud.
 
-#### find_by_first_name(first_name: String) -> list
+#### find_by_first_name(first_name: String) -> List
 > Returns a list of all users with that first name, as duplicate first names can exist.
 
-#### find_by_last_name(last_name: String) -> list
+#### find_by_last_name(last_name: String) -> List
 > Return a list of all users with that last name, as duplicate last names can exist.
 
 #### find_by_id(user_id: String) -> Location
