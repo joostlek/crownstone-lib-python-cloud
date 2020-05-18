@@ -84,7 +84,7 @@ Crownstone cloud is initialized with 2 arguments:
 * User email
 * User password
 
-If you do not yet have a Crownstone account, go to [My Crownstone](my.crownstone.rocks) to set one up.
+If you do not yet have a Crownstone account, go to [My Crownstone](https://my.crownstone.rocks) to set one up.
 The email and password are used to re-login after an access token has expired.
 ```Python
 cloud = CrownstoneCloud('email', 'password')
