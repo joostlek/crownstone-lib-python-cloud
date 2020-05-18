@@ -33,7 +33,8 @@ class CrownstoneCloud:
 
     async def initialize(self) -> None:
         """Async initialize the cloud data"""
-        await self.login()
+        if RequestHandler.access_token is None:
+            await self.login()
         await self.sync()
 
     def initialize_sync(self) -> None:
