@@ -93,15 +93,14 @@ if already have an access token and you want to skip to first login for speed yo
 ```Python
 cloud.set_access_token('myAccessToken')
 ```
-to initialize all the cloud data into the lib use
+to initialize all the cloud data into the lib, for async usage use:
 ```Python
 await cloud.initialize()
 ```
-for async usage, or use
+Or for sync usage use:
 ```Python
 cloud.initialize_sync()
 ```
-for sync usage.<br>
 It is only required to call initialize once at the beginning of the program.
 
 ## Data structure
