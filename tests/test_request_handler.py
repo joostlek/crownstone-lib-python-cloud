@@ -19,7 +19,6 @@ class TestCrownstoneCloud(asynctest.TestCase):
         with self.assertRaises(CrownstoneAuthenticationError) as login_err:
             await self.request_handler.raise_on_error(auth_error)
 
-        print(login_err.exception.type)
         assert login_err.exception.type == 'LOGIN_FAILED'
 
         with self.assertRaises(CrownstoneAuthenticationError) as not_verified_err:
