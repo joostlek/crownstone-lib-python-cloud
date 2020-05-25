@@ -105,7 +105,7 @@ class RequestHandler:
             if 'code' in error:
                 error_type = error['code']
                 try:
-                    if error_type == 'INVALID_TOKEN':
+                    if error_type == 'INVALID_TOKEN' or error_type == 'AUTHORIZATION_REQUIRED':
                         _LOGGER.warning("Token expired. Refreshing now...")
                         await self.refresh_token()
                         return True  # re-run the request

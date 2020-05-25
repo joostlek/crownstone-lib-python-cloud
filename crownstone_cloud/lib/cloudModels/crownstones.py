@@ -1,5 +1,5 @@
 from crownstone_cloud._RequestHandlerInstance import RequestHandler
-from typing import Optional, ValuesView
+from typing import Optional
 import logging
 import asyncio
 
@@ -29,6 +29,8 @@ class Crownstones:
         for crownstone in crownstone_data:
             self.crownstones[crownstone['id']] = Crownstone(self.loop, crownstone)
 
+    async def update_state(self) -> None:
+        """Replaces the switch state of all crownstones with that of the cloud."""
         for crownstone in self.crownstones.values():
             crownstone_state = await RequestHandler.get('Stones', 'currentSwitchState', model_id=crownstone.cloud_id)
             crownstone.state = crownstone_state['switchState']
@@ -36,6 +38,10 @@ class Crownstones:
     def update_sync(self) -> None:
         """Sync function for updating the crownstone data"""
         self.loop.run_until_complete(self.update())
+
+    def update_state_sync(self) -> None:
+        """Sync function for updating the crownstone state"""
+        self.loop.run_until_complete(self.update_state())
 
     def find(self, crownstone_name: str) -> object or None:
         """Search for a crownstone by name and return crownstone object if found"""

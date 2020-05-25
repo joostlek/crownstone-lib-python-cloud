@@ -45,6 +45,10 @@ class CrownstoneCloud:
     def set_access_token(access_token: str) -> None:
         RequestHandler.access_token = access_token
 
+    @staticmethod
+    def get_access_token() -> str:
+        return RequestHandler.access_token
+
     async def login(self) -> None:
         """Login to Crownstone API"""
         result = await RequestHandler.post('users', 'login', json=self.login_data)
@@ -65,7 +69,9 @@ class CrownstoneCloud:
         for sphere in self.spheres:
             await asyncio.gather(
                 sphere.crownstones.update(),
+                sphere.crownstones.update_state(),
                 sphere.locations.update(),
+                sphere.locations.update_presence(),
                 sphere.users.update()
             )
         _LOGGER.warning("Cloud data successfully initialized")
