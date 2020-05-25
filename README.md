@@ -286,4 +286,25 @@ cloud.spheres.update_sync()
 Make sure to see the examples above!
 
 ## Testing
-Tests coming soon!
+To run the tests using tox install tox first by running:
+```console
+$ pip install tox
+```
+To execute the tests cd to the project folder and run:
+```console
+$ tox
+```
+To see which parts of the code are covered by the tests, a coverage report is generated after the tests have been successfull.<br>
+To see the coverage report run:
+```console
+$ coverage report
+```
+If you like to get a better overview of the test you can generate a HTML file like so:
+```console
+$ coverage html
+```
+To view your html file directly on Linux:
+```console
+$ ./htmlcov/index.html
+```
+On Windows simply navigate to the htmlcov folder inside the project folder, and double-click index.html. It will be executed in your selected browser.
