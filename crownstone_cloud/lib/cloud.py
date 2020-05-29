@@ -96,5 +96,7 @@ class CrownstoneCloud:
 
 def password_to_hash(password):
     """Generate a sha1 password from string"""
+    if password is None:
+        return None
     pw_hash = hashlib.sha1(password.encode('utf-8'))
     return pw_hash.hexdigest()

@@ -30,7 +30,7 @@ class TestCrownstoneCloud(asynctest.TestCase):
         self.test_websession = aiohttp.ClientSession(loop=self.test_loop)
 
     def test_init(self):
-        assert self.cloud.loop == asyncio.get_event_loop()
+        assert isinstance(self.cloud.loop, asyncio.AbstractEventLoop)
         assert isinstance(RequestHandler.websession, aiohttp.ClientSession)
 
         self.cloud = CrownstoneCloud('email', 'password', loop=self.test_loop)
