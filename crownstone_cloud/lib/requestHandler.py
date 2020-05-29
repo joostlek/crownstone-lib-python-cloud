@@ -118,7 +118,6 @@ class RequestHandler:
             else:
                 _LOGGER.error(error['message'])
 
-            await self.websession.close()
         return False
 
     async def refresh_token(self):
