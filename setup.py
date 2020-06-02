@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='crownstone-lib-python-cloud',
-    version='1.0.2',
+    version='1.0.5',
     url='https://github.com/crownstone/crownstone-lib-python-cloud',
     author='Crownstone B.V.',
     description='Async library to get & store data from the Crownstone cloud.',
