@@ -24,6 +24,7 @@ class Spheres:
         Get the spheres for the user from the cloud
         This will replace all current data with new data from the cloud
         """
+        # get sphere data
         self.spheres = {}
         sphere_data = await RequestHandler.get('users', 'spheres', model_id=self.user_id)
         for sphere in sphere_data:

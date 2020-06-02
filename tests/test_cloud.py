@@ -94,7 +94,7 @@ class TestCrownstoneCloud(asynctest.TestCase):
 
         # add fake crownstone data for test
         mock_request.return_value = crownstone_data
-        await sphere.crownstones.update()
+        await sphere.crownstones.update_crownstone_data()
         mock_request.assert_awaited()
         # state
         mock_request.return_value = switch_state_data
@@ -108,7 +108,7 @@ class TestCrownstoneCloud(asynctest.TestCase):
 
         # add fake location data for test
         mock_request.return_value = location_data
-        await sphere.locations.update()
+        await sphere.locations.update_location_data()
         mock_request.assert_awaited()
         # presence
         mock_request.return_value = presence_data
@@ -146,5 +146,6 @@ class TestCrownstoneCloud(asynctest.TestCase):
             brightness_mock.assert_not_called()
             # set dimming to true for test
             crownstone.dimming_enabled = True
+            crownstone.dimming_synced_to_crownstone = True
             with self.assertRaises(ValueError):
                 await crownstone.set_brightness(200)

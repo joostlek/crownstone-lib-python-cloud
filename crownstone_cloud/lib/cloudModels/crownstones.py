@@ -21,7 +21,20 @@ class Crownstones:
 
     async def update(self) -> None:
         """
-        Get the crownstones and their state for this sphere from the cloud
+        Update all cloud data
+        The requests are done separately for testing.
+        """
+        # get all data first
+        await self.update_crownstone_data()
+        # get the other data concurrently
+        await asyncio.gather(
+            self.update_state(),
+            self.update_abilities()
+        )
+
+    async def update_crownstone_data(self) -> None:
+        """
+        Get the crownstones data from the cloud
         This will replace all current data from the cloud with new data
         """
         self.crownstones = {}
@@ -35,13 +48,19 @@ class Crownstones:
             crownstone_state = await RequestHandler.get('Stones', 'currentSwitchState', model_id=crownstone.cloud_id)
             crownstone.state = crownstone_state['switchState']
 
+    async def update_abilities(self) -> None:
+        """Get the abilities for all crownstones"""
+        # only dimming is requested for now
+        for crownstone in self.crownstones.values():
+            abilities = await RequestHandler.get('Stones', 'abilities', model_id=crownstone.cloud_id)
+            for ability in abilities:
+                if ability['type'] == 'dimming':
+                    crownstone.dimming_enabled = ability['enabled']
+                    crownstone.dimming_synced_to_crownstone = ability['syncedToCrownstone']
+
     def update_sync(self) -> None:
         """Sync function for updating the crownstone data"""
         self.loop.run_until_complete(self.update())
-
-    def update_state_sync(self) -> None:
-        """Sync function for updating the crownstone state"""
-        self.loop.run_until_complete(self.update_state())
 
     def find(self, crownstone_name: str) -> object or None:
         """Search for a crownstone by name and return crownstone object if found"""
@@ -63,7 +82,8 @@ class Crownstone:
         self.loop = loop
         self.data = data
         self.state: Optional[float] = None
-        self.dimming_enabled = False
+        self.dimming_enabled: Optional[bool] = None
+        self.dimming_synced_to_crownstone: Optional[bool] = None
 
     @property
     def name(self) -> str:
@@ -110,12 +130,16 @@ class Crownstone:
         :param percentage: the brightness percentage (0 - 100)
         """
         if self.dimming_enabled:
-            if percentage < 0 or percentage > 100:
-                raise ValueError("Enter a percentage between 0 and 100")
+            if self.dimming_synced_to_crownstone:
+                if percentage < 0 or percentage > 100:
+                    raise ValueError("Enter a percentage between 0 and 100")
+                else:
+                    brightness = percentage / 100
+                    await RequestHandler.put('Stones', 'setSwitchStateRemotely', model_id=self.cloud_id,
+                                             command='switchState', value=brightness)
             else:
-                brightness = percentage / 100
-                await RequestHandler.put('Stones', 'setSwitchStateRemotely', model_id=self.cloud_id,
-                                         command='switchState', value=brightness)
+                _LOGGER.error("Dimming is enabled but not synced to crownstone yet. Make sure to be in your sphere "
+                              "and have Bluetooth enabled")
         else:
             _LOGGER.error("Dimming is not enabled for this crownstone. Go to the crownstone app to enable it")
 

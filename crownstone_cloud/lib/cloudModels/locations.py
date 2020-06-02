@@ -18,6 +18,16 @@ class Locations:
 
     async def update(self) -> None:
         """
+        Update all cloud data
+        The requests are done separately for testing.
+        """
+        # get location data first
+        await self.update_location_data()
+        # get the presence
+        await self.update_location_presence()
+
+    async def update_location_data(self) -> None:
+        """
         Get the locations and presence from the cloud
         This will replace all current data with new data from the cloud
         """
@@ -38,10 +48,6 @@ class Locations:
     def update_sync(self) -> None:
         """Sync function for updating the location data"""
         self.loop.run_until_complete(self.update())
-
-    def update_presence_sync(self) -> None:
-        """Sync function for updating the presence"""
-        self.loop.run_until_complete(self.update_location_presence())
 
     def find(self, location_name: str) -> object or None:
         """Search for a sphere by name and return sphere object if found"""

@@ -61,7 +61,7 @@ class CrownstoneCloud:
 
     async def sync(self) -> None:
         """Sync all data from cloud"""
-        _LOGGER.warning("Initiating all cloud data, please wait...")
+        _LOGGER.info("Initiating all cloud data, please wait...")
         # get the sphere data
         await self.spheres.update()
 
@@ -70,12 +70,10 @@ class CrownstoneCloud:
             await asyncio.gather(
                 sphere.update_sphere_presence(),
                 sphere.crownstones.update(),
-                sphere.crownstones.update_state(),
                 sphere.locations.update(),
-                sphere.locations.update_location_presence(),
                 sphere.users.update()
             )
-        _LOGGER.warning("Cloud data successfully initialized")
+        _LOGGER.info("Cloud data successfully initialized")
 
     def get_crownstone(self, crownstone_name) -> Crownstone:
         """Get a crownstone by name without specifying a sphere"""
