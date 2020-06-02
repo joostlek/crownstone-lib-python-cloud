@@ -61,6 +61,10 @@ async def main():
     sphere = cloud.spheres.find('awesomeSphere')
     for crownstone in sphere.crownstones:
         await crownstone.turn_on()
+    
+    # close session
+    # required when ran as standalone program, optional if ran in integration.
+    await cloud.close_session()
 
 asyncio.run(main())
 ```
@@ -77,6 +81,10 @@ cloud.initialize_sync()
 # get a crownstone and turn it on
 crownstone = cloud.get_crownstone('awesomeCrownstone')
 crownstone.turn_on_sync()
+
+# close session
+# required when ran as standalone program, optional if ran in integration.
+cloud.close_session_sync()
 ```
 
 ### Initialization
