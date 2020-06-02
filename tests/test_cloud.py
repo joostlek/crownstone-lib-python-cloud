@@ -36,9 +36,6 @@ class TestCrownstoneCloud(asynctest.TestCase):
         self.cloud = CrownstoneCloud('email', 'password', loop=self.test_loop)
         assert self.cloud.loop == self.test_loop
 
-        self.cloud = CrownstoneCloud('email', 'password', loop=self.test_loop, websession=self.test_websession)
-        assert RequestHandler.websession == self.test_websession
-
     async def test_initialize(self):
         # test init, only logging in when there's no access token
         with asynctest.patch.object(CrownstoneCloud, 'login') as login_mock:
@@ -115,7 +112,7 @@ class TestCrownstoneCloud(asynctest.TestCase):
         mock_request.assert_awaited()
         # presence
         mock_request.return_value = presence_data
-        await sphere.locations.update_presence()
+        await sphere.locations.update_location_presence()
         mock_request.assert_awaited()
 
         # test getting crownstone, users, locations by id & name

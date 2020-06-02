@@ -57,6 +57,7 @@ class Sphere:
         self.locations = Locations(loop, self.cloud_id)
         self.users = Users(loop, self.cloud_id)
         self.keys: dict = {}
+        self.present_people = []
 
     @property
     def name(self) -> str:
@@ -83,3 +84,9 @@ class Sphere:
     def get_keys_sync(self) -> dict:
         """Sync get the user keys for this sphere, that can be used for BLE (optional)"""
         return self.loop.run_until_complete(self.get_keys())
+
+    async def update_sphere_presence(self) -> None:
+        """Replaces the current presence with that of the cloud."""
+        presence_data = await RequestHandler.get('Spheres', 'presentPeople', model_id=self.cloud_id)
+        for user in presence_data:
+            self.present_people.append(user['userId'])

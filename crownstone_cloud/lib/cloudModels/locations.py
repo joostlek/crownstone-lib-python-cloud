@@ -26,7 +26,7 @@ class Locations:
         for location in location_data:
             self.locations[location['id']] = Location(location)
 
-    async def update_presence(self) -> None:
+    async def update_location_presence(self) -> None:
         """Replaces the current presence with that of the cloud."""
         presence_data = await RequestHandler.get('Spheres', 'presentPeople', model_id=self.sphere_id)
         for presence in presence_data:
@@ -41,7 +41,7 @@ class Locations:
 
     def update_presence_sync(self) -> None:
         """Sync function for updating the presence"""
-        self.loop.run_until_complete(self.update_presence())
+        self.loop.run_until_complete(self.update_location_presence())
 
     def find(self, location_name: str) -> object or None:
         """Search for a sphere by name and return sphere object if found"""

@@ -20,7 +20,7 @@ class CrownstoneCloud:
             loop: asyncio.AbstractEventLoop = None,
             websession: aiohttp.ClientSession = None
     ) -> None:
-        self.login_data = {'email': email, 'password': password_to_hash(password)}
+        self.login_data = {'email': email, 'password': self.password_to_hash(password)}
         self.loop = loop or asyncio.get_event_loop()
         # set request handler params
         RequestHandler.websession = websession or aiohttp.ClientSession(loop=loop)
@@ -29,7 +29,7 @@ class CrownstoneCloud:
         self.spheres: Optional[Spheres] = None
 
     def __del__(self):
-        self.cleanup()
+        self.reset()
 
     async def initialize(self) -> None:
         """Async initialize the cloud data"""
@@ -68,10 +68,11 @@ class CrownstoneCloud:
         # get the data from the sphere attributes
         for sphere in self.spheres:
             await asyncio.gather(
+                sphere.update_sphere_presence(),
                 sphere.crownstones.update(),
                 sphere.crownstones.update_state(),
                 sphere.locations.update(),
-                sphere.locations.update_presence(),
+                sphere.locations.update_location_presence(),
                 sphere.users.update()
             )
         _LOGGER.warning("Cloud data successfully initialized")
@@ -88,15 +89,27 @@ class CrownstoneCloud:
         for sphere in self.spheres:
             return sphere.crownstones[crownstone_id]
 
-    def cleanup(self) -> None:
+    @staticmethod
+    def reset() -> None:
+        """Cleanup the request handler instance data"""
+        RequestHandler.access_token = None
+        RequestHandler.websession = None
+        RequestHandler.login_data = None
+
+    @staticmethod
+    async def close_session() -> None:
         """Close the websession after we are done"""
-        self.loop.create_task(RequestHandler.websession.close())
+        await RequestHandler.websession.close()
         _LOGGER.warning("Session closed.")
 
+    def close_session_sync(self) -> None:
+        """Sync version of close session"""
+        self.loop.run_until_complete(self.close_session())
 
-def password_to_hash(password):
-    """Generate a sha1 password from string"""
-    if password is None:
-        return None
-    pw_hash = hashlib.sha1(password.encode('utf-8'))
-    return pw_hash.hexdigest()
+    @staticmethod
+    def password_to_hash(password):
+        """Generate a sha1 password from string"""
+        if password is None:
+            return None
+        pw_hash = hashlib.sha1(password.encode('utf-8'))
+        return pw_hash.hexdigest()

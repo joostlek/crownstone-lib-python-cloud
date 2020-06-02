@@ -6,6 +6,7 @@ class CloudDataUpdater:
     Optional API.
     Contains callbacks that can be used with the Crownstone SSE lib, or own events.
     """
+
     def __init__(self, cloud_instance: CrownstoneCloud) -> None:
         """
         :param cloud_instance: your instance of the cloud lib.
@@ -35,14 +36,21 @@ class CloudDataUpdater:
         PresenceEvent is a class containing: event_type, sphere_id, location_id, user_id.
         """
         sphere = self.cloud_instance.spheres.find_by_id(presence_event.sphere_id)
-        location = sphere.locations.find_by_id(presence_event.location_id)
         user = sphere.users.find_by_id(presence_event.user_id)
 
         if presence_event.type == 'enterLocation':
+            location = sphere.locations.find_by_id(presence_event.location_id)
             location.present_people.append(user.cloud_id)
 
         if presence_event.type == 'exitLocation':
+            location = sphere.locations.find_by_id(presence_event.location_id)
             location.present_people.remove(user.cloud_id)
+
+        if presence_event.type == 'enterSphere':
+            sphere.present_people.append(user.cloud_id)
+
+        if presence_event.type == 'exitSphere':
+            sphere.present_people.remove(user.cloud_id)
 
     def update_data(self, data_change_event) -> None:
         """
