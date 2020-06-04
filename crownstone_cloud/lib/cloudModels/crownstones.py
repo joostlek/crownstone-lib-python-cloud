@@ -105,6 +105,10 @@ class Crownstone:
     def sw_version(self) -> str:
         return self.data['firmwareVersion']
 
+    @property
+    def icon(self) -> str:
+        return self.data['icon']
+
     async def turn_on(self) -> None:
         """Async turn this crownstone on"""
         await RequestHandler.put('Stones', 'setSwitchStateRemotely', model_id=self.cloud_id,
