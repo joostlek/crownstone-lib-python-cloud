@@ -28,9 +28,6 @@ class CrownstoneCloud:
         # data
         self.spheres: Optional[Spheres] = None
 
-    def __del__(self):
-        self.reset()
-
     async def initialize(self) -> None:
         """Async initialize the cloud data"""
         if RequestHandler.access_token is None:
@@ -91,7 +88,6 @@ class CrownstoneCloud:
     def reset() -> None:
         """Cleanup the request handler instance data"""
         RequestHandler.access_token = None
-        RequestHandler.websession = None
         RequestHandler.login_data = None
 
     @staticmethod

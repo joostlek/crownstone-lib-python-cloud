@@ -68,11 +68,15 @@ class Crownstones:
             if crownstone_name == crownstone.name:
                 return crownstone
 
-        return None
-
     def find_by_id(self, crownstone_id) -> object or None:
         """Search for a crownstone by id and return crownstone object if found"""
         return self.crownstones[crownstone_id]
+
+    def find_by_uid(self, crownstone_uid) -> object or None:
+        """Search for a crownstone by uid and return crownstone object if found"""
+        for crownstone in self.crownstones.values():
+            if crownstone_uid == crownstone.unique_id:
+                return crownstone
 
 
 class Crownstone:
