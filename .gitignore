@@ -129,3 +129,5 @@ dmypy.json
 
 # PyCharm
 .idea/
+
+release.sh
