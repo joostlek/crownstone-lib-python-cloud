@@ -131,18 +131,17 @@ class Crownstone:
         """Sync turn off this crownstone"""
         self.loop.run_until_complete(self.turn_off())
 
-    async def set_brightness(self, percentage: int) -> None:
+    async def set_brightness(self, brightness: float) -> None:
         """
         Set the brightness of this crownstone, if dimming enabled
 
-        :param percentage: the brightness percentage (0 - 100)
+        :param brightness: brightness value between (0 - 1)
         """
         if self.dimming_enabled:
             if self.dimming_synced_to_crownstone:
-                if percentage < 0 or percentage > 100:
-                    raise ValueError("Enter a percentage between 0 and 100")
+                if brightness < 0 or brightness > 1:
+                    raise ValueError("Enter a value between 0 and 1")
                 else:
-                    brightness = percentage / 100
                     await RequestHandler.put('Stones', 'setSwitchStateRemotely', model_id=self.cloud_id,
                                              command='switchState', value=brightness)
             else:
@@ -151,10 +150,10 @@ class Crownstone:
         else:
             _LOGGER.error("Dimming is not enabled for this crownstone. Go to the crownstone app to enable it")
 
-    def set_brightness_sync(self, percentage: int) -> None:
+    def set_brightness_sync(self, brightness: float) -> None:
         """
         Sync set the brightness of this crownstone, if dimming enabled
 
-        :param percentage: the brightness percentage (0 - 100)
+        :param brightness: the brightness percentage (0 - 1)
         """
-        self.loop.run_until_complete(self.set_brightness(percentage))
+        self.loop.run_until_complete(self.set_brightness(brightness))
