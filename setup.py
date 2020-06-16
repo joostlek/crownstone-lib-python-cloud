@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='crownstone-cloud',
-    version='1.1.3',
+    version='1.1.4',
     long_description=long_description,
     long_description_content_type="text/markdown",
     url='https://github.com/crownstone/crownstone-lib-python-cloud',
