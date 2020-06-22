@@ -45,26 +45,28 @@ $ python setup.py install
 
 ```Python
 from crownstone_cloud.lib.cloud import CrownstoneCloud
+import logging
 import asyncio
+
+# enable logging
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
 async def main():
     # init cloud
     cloud = CrownstoneCloud('email', 'password')
-    await cloud.initialize()
+    await cloud.async_initialize()
 
-    # get a crownstone by name and switch it on
-    crownstone = cloud.get_crownstone('awesomeCrownstone')
-    await crownstone.turn_on()
+    # get a crownstone by name that can dim, and put it on 50% brightness
+    crownstone_lamp = cloud.get_crownstone('Lamp')
+    await crownstone_lamp.async_set_brightness(0.5)
 
-    # switch all crownstones in a sphere to on:
-    sphere = cloud.spheres.find('awesomeSphere')
-    for crownstone in sphere.crownstones:
-        await crownstone.turn_on()
-    
-    # close session
-    # required when ran as standalone program, optional if ran in integration.
-    await cloud.close_session()
+    # get a crownstone by name and turn it on
+    crownstone_tv = cloud.get_crownstone('TV')
+    await crownstone_tv.async_turn_on()
+
+    # close the session after we are done
+    await cloud.async_close_session()
 
 asyncio.run(main())
 ```
@@ -73,18 +75,20 @@ asyncio.run(main())
 
 ```Python
 from crownstone_cloud.lib.cloud import CrownstoneCloud
+import logging
+
+# enable logging
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 # init cloud
 cloud = CrownstoneCloud('email', 'password')
-cloud.initialize_sync()
+cloud.initialize()
 
-# get a crownstone and turn it on
-crownstone = cloud.get_crownstone('awesomeCrownstone')
-crownstone.turn_on_sync()
+# get a crownstone by name and turn it on
+crownstone_coffee_machine = cloud.get_crownstone('Coffee machine')
+crownstone_coffee_machine.turn_on()
 
-# close session
-# required when ran as standalone program, optional if ran in integration.
-cloud.close_session_sync()
+cloud.close_session()
 ```
 
 ### Initialization
@@ -103,11 +107,11 @@ cloud.set_access_token('myAccessToken')
 ```
 to initialize all the cloud data into the lib, for async usage use:
 ```Python
-await cloud.initialize()
+await cloud.async_initialize()
 ```
 Or for sync usage use:
 ```Python
-cloud.initialize_sync()
+cloud.initialize()
 ```
 It is only required to call initialize once at the beginning of the program.
 
@@ -150,6 +154,7 @@ A Sphere has the following fields in the cloud lib:
 * name: String
 * cloud_id: String
 * unique_id: String
+* present_people: List
 
 ### Locations
 
@@ -176,8 +181,8 @@ Example names of Crownstones:
 * Television
 
 A Crownstone has the following fields in the cloud lib:
+* abilities: Dict
 * state: Float (0..1)
-* dimming_enabled: Bool (default = False)
 * name: String
 * unique_id: String
 * cloud_id: String
@@ -204,7 +209,7 @@ A User has the following fields in the cloud lib:
 
 ### Cloud
 
-#### initialize()
+#### async_initialize()
 > Login if no access token available, and sync all data for the user from the cloud.
 
 #### set_access_token(access_token: String)
@@ -216,10 +221,16 @@ A User has the following fields in the cloud lib:
 #### get_crownstone_by_id(crownstone_id: String) -> Crownstone
 > Get a Crownstone object by it's id, it's it exists.
 
+#### async_close_session()
+> Async function. This will close the websession in requestHandler to cleanup nicely after the program has finished.
+
+#### reset()
+> Reset the requestHandler parameters in case the cloud instance was cleaned up and needs to be recreated.
+
 ### Spheres
 
-#### update()
-> Async function. Sync the Spheres with the cloud. Doing this will replace all current sphere data with that of the cloud.
+#### async_update_sphere_data()
+> Async function. Sync the Spheres with the cloud. Calling the function again after init will update the current data.
 
 #### find(sphere_name: String) -> Sphere
 > Returns a sphere object if one exists by that name.
@@ -229,13 +240,13 @@ A User has the following fields in the cloud lib:
 
 ### Sphere
 
-#### get_keys() -> Dict
+#### async_get_keys() -> Dict
 > Async function. Returns a dict with the keys of this sphere. The keys can be used for BLE connectivity with the Crownstones.
 
 ### Crownstones
 
-#### update()
-> Async function. Sync the Crownstones with the cloud for a sphere. Doing this will replace all the current crownstone data with that of the cloud.
+#### async_update_crownstone_data()
+> Async function. Sync the Crownstones with the cloud for a sphere. Calling the function again after init will update the current data.
 
 #### find(crownstone_name: String) -> Crownstone
 > Return a Crownstone object if one exists by that name.
@@ -245,19 +256,22 @@ A User has the following fields in the cloud lib:
 
 ### Crownstone
 
-#### turn_on()
+#### async_turn_on()
 > Async function. Send a command to turn a Crownstone on. To make this work make sure to be in the selected sphere and have Bluetooth enabled on your phone.
 
-#### turn_off()
+#### async_turn_off()
 > Async function. Send a command to turn a Crownstone off. To make this work make sure to be in the selected sphere and have Bluetooth enabled on your phone.
 
-#### set_brightness(percentage: Int)
+#### async_set_brightness(value: Float)
 > Async function. Send a command to set a Crownstone to a given brightness level. To make this work make sure to be in the selected sphere and have Bluetooth enabled on your phone.
 
 ### Locations
 
-#### update()
-> Async function. Sync the Locations en present people in that location with the cloud for a sphere. Doing this will replace all the current location data with that of the cloud.
+#### async_update_location_data()
+> Async function. Sync the Locations with the cloud for a sphere. Calling the function again after init will update the current data.
+
+#### async_update_location_presence()
+> Async function. Sync the presence with the cloud. This will replace the current presence with the new presence.
 
 #### find(location_name: String) -> Location
 > Return a location object if one exists by that name.
@@ -267,8 +281,8 @@ A User has the following fields in the cloud lib:
 
 ### Users
 
-#### update()
-> Async function. Sync the Users with the cloud for a sphere. Doing this will replace all the current user data with that of the cloud.
+#### async_update_user_data()
+> Async function. Sync the Users with the cloud for a sphere. Calling the function again after init will update the current data.
 
 #### find_by_first_name(first_name: String) -> List
 > Returns a list of all users with that first name, as duplicate first names can exist.
@@ -281,15 +295,16 @@ A User has the following fields in the cloud lib:
 
 ## Async vs sync
 The lib can be used synchonously and asynchronously.<br>
+All async functions in the library API functions in this library have the prefix **async_**
 Async functions need to be awaited:
 ```Python
-await cloud.spheres.update()
+await cloud.spheres.async_update_sphere_data()
 ```
 All the async functions mentioned above can also be used synchronously.<br>
-Simply type the same function name, but with underscore sync at the end. for example:
+Sync functions don't have the async prefix. for example:
 ```Python
-cloud.initialize_sync()
-cloud.spheres.update_sync()
+cloud.initialize()
+cloud.spheres.update_sphere_data()
 ```
 Make sure to see the examples above!
 
