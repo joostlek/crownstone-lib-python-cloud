@@ -61,6 +61,10 @@ class Locations:
         presence_data = await RequestHandler.get(
             'Spheres', 'presentPeople', model_id=self.sphere_id
         )
+        # reset the presence
+        for location in self.locations.values():
+            location.present_people = []
+        # add new presence
         for presence in presence_data:
             for present_location in presence['locations']:
                 for location in self.locations.values():
