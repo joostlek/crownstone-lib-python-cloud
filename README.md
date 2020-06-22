@@ -12,7 +12,7 @@ Asynchronous Python library to get data from the cloud, and switch Crownstones.
 ## Requirements
 
 * Python 3.7 (only version that it's tested on currently)
-* Aiohttp 3.6.2
+* Aiohttp 3.6.1
 
 ## Standard installation
 
