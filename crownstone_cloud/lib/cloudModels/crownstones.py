@@ -1,5 +1,8 @@
+"""Crownstone handler for Crownstone cloud data"""
 from crownstone_cloud._RequestHandlerInstance import RequestHandler
-from typing import Optional
+from crownstone_cloud.const import (
+    DIMMING_ABILITY
+)
 import logging
 import asyncio
 
@@ -7,153 +10,206 @@ _LOGGER = logging.Logger(__name__)
 
 
 class Crownstones:
-    """Handler for the crownstones of a sphere"""
+    """Handler for the crownstones of a sphere."""
 
     def __init__(self, loop: asyncio.AbstractEventLoop, sphere_id: str) -> None:
-        """Init"""
+        """Initialization."""
         self.loop = loop
-        self.crownstones: Optional[dict] = None
+        self.crownstones = {}
         self.sphere_id = sphere_id
 
     def __iter__(self):
-        """Iterate over crownstones"""
+        """Iterate over crownstones."""
         return iter(self.crownstones.values())
 
-    async def update(self) -> None:
-        """
-        Update all cloud data
-        The requests are done separately for testing.
-        """
-        # get all data first
-        await self.update_crownstone_data()
-        # get the other data concurrently
-        await asyncio.gather(
-            self.update_state(),
-            self.update_abilities()
+    async def async_update_crownstone_data(self) -> None:
+        """Get the crownstones data from the cloud."""
+        # include abilities and current switch state in the request
+        data_filter = {"include": ["currentSwitchState", {"abilities": "properties"}]}
+        # request data
+        crownstone_data = await RequestHandler.get(
+            'Spheres', 'ownedStones', filter=data_filter, model_id=self.sphere_id
         )
-
-    async def update_crownstone_data(self) -> None:
-        """
-        Get the crownstones data from the cloud
-        This will replace all current data from the cloud with new data
-        """
-        self.crownstones = {}
-        crownstone_data = await RequestHandler.get('Spheres', 'ownedStones', model_id=self.sphere_id)
+        # process items
+        removed_items = []
+        new_items = []
         for crownstone in crownstone_data:
-            self.crownstones[crownstone['id']] = Crownstone(self.loop, crownstone)
+            crownstone_id = crownstone['id']
+            exists = self.crownstones.get(crownstone_id)
+            # check if the crownstone already exists
+            # it is important that we don't throw away existing objects, as they need to remain functional
+            if exists:
+                # update data and update abilities
+                self.crownstones[crownstone_id].data = crownstone
+            else:
+                # add new Crownstone
+                self.crownstones[crownstone_id] = Crownstone(self.loop, crownstone)
 
-    async def update_state(self) -> None:
-        """Replaces the switch state of all crownstones with that of the cloud."""
-        for crownstone in self.crownstones.values():
-            crownstone_state = await RequestHandler.get('Stones', 'currentSwitchState', model_id=crownstone.cloud_id)
-            crownstone.state = crownstone_state['switchState']
+            # update the abilities of the Crownstone from the data
+            self.crownstones[crownstone_id].update_abilities()
 
-    async def update_abilities(self) -> None:
-        """Get the abilities for all crownstones"""
-        # only dimming is requested for now
-        for crownstone in self.crownstones.values():
-            abilities = await RequestHandler.get('Stones', 'abilities', model_id=crownstone.cloud_id)
-            for ability in abilities:
-                if ability['type'] == 'dimming':
-                    crownstone.dimming_enabled = ability['enabled']
-                    crownstone.dimming_synced_to_crownstone = ability['syncedToCrownstone']
+            # generate list with new id's to check with the existing id's
+            new_items.append(crownstone_id)
 
-    def update_sync(self) -> None:
-        """Sync function for updating the crownstone data"""
-        self.loop.run_until_complete(self.update())
+        # check for removed items
+        for crownstone_id in self.crownstones:
+            if crownstone_id not in new_items:
+                removed_items.append(crownstone_id)
+
+        # remove items from dict
+        for crownstone_id in removed_items:
+            del self.crownstones[crownstone_id]
+
+    def update_crownstone_data(self) -> None:
+        """Sync function for updating the crownstone data."""
+        self.loop.run_until_complete(self.async_update_crownstone_data())
 
     def find(self, crownstone_name: str) -> object or None:
-        """Search for a crownstone by name and return crownstone object if found"""
+        """Search for a crownstone by name and return crownstone object if found."""
         for crownstone in self.crownstones.values():
             if crownstone_name == crownstone.name:
                 return crownstone
 
     def find_by_id(self, crownstone_id) -> object or None:
-        """Search for a crownstone by id and return crownstone object if found"""
+        """Search for a crownstone by id and return crownstone object if found."""
         return self.crownstones[crownstone_id]
 
     def find_by_uid(self, crownstone_uid) -> object or None:
-        """Search for a crownstone by uid and return crownstone object if found"""
+        """Search for a crownstone by uid and return crownstone object if found."""
         for crownstone in self.crownstones.values():
             if crownstone_uid == crownstone.unique_id:
                 return crownstone
+
+
+class CrownstoneAbility:
+    """Represents a Crownstone Ability"""
+
+    def __init__(self, data: dict) -> None:
+        """Initialization"""
+        self.data = data
+        self.is_enabled = self.data['enabled']
+        self.properties = self.data['properties']
+
+    @property
+    def type(self) -> str:
+        """Return the ability type."""
+        return self.data['type']
+
+    @property
+    def ability_id(self) -> str:
+        """Return the ability id."""
+        return self.data['id']
+
+    @property
+    def crownstone_id(self) -> str:
+        """Return the Crownstone id."""
+        return self.data['stoneId']
 
 
 class Crownstone:
     """Represents a Crownstone"""
 
     def __init__(self, loop: asyncio.AbstractEventLoop, data: dict) -> None:
+        """Initialization."""
         self.loop = loop
         self.data = data
-        self.state: Optional[float] = None
-        self.dimming_enabled: Optional[bool] = None
-        self.dimming_synced_to_crownstone: Optional[bool] = None
+        self.abilities = {}
 
     @property
     def name(self) -> str:
+        """Return the name of this Crownstone."""
         return self.data['name']
 
     @property
     def unique_id(self) -> int:
+        """Return the unique_id of this Crownstone."""
         return self.data['uid']
 
     @property
     def cloud_id(self) -> str:
+        """Return the cloud id of this Crownstone."""
         return self.data['id']
 
     @property
     def type(self) -> str:
+        """Return the Crownstone type."""
         return self.data['type']
 
     @property
     def sw_version(self) -> str:
+        """Return the firmware version of this Crownstone."""
         return self.data['firmwareVersion']
 
     @property
     def icon(self) -> str:
+        """Return the icon of this Crownstone."""
         return self.data['icon']
 
-    async def turn_on(self) -> None:
-        """Async turn this crownstone on"""
-        await RequestHandler.put('Stones', 'setSwitchStateRemotely', model_id=self.cloud_id,
-                                 command='switchState', value=1)
+    @property
+    def state(self) -> float:
+        """Return the last reported state for this Crownstone."""
+        return self.data['currentSwitchState']['switchState']
 
-    def turn_on_sync(self) -> None:
-        """Sync turn on this crownstone"""
-        self.loop.run_until_complete(self.turn_on())
+    @state.setter
+    def state(self, value: float) -> None:
+        """Set a new state for this Crownstone."""
+        self.data['currentSwitchState']['switchState'] = value
 
-    async def turn_off(self) -> None:
-        """Async turn this crownstone off"""
-        await RequestHandler.put('Stones', 'setSwitchStateRemotely', model_id=self.cloud_id,
-                                 command='switchState', value=0)
+    def update_abilities(self) -> None:
+        """Add/update the abilities for this Crownstone."""
+        for ability in self.data['abilities']:
+            self.abilities[ability['type']] = CrownstoneAbility(ability)
 
-    def turn_off_sync(self) -> None:
-        """Sync turn off this crownstone"""
-        self.loop.run_until_complete(self.turn_off())
-
-    async def set_brightness(self, brightness: float) -> None:
+    async def async_turn_on(self) -> None:
         """
-        Set the brightness of this crownstone, if dimming enabled
+        Turn this crownstone on.
+
+        This method is a coroutine.
+        """
+        await RequestHandler.put(
+            'Stones', 'setSwitchStateRemotely', model_id=self.cloud_id, command='switchState', value=1
+        )
+
+    async def async_turn_off(self) -> None:
+        """
+        Turn this crownstone off.
+
+        This method is a coroutine.
+        """
+        await RequestHandler.put(
+            'Stones', 'setSwitchStateRemotely', model_id=self.cloud_id, command='switchState', value=0
+        )
+
+    async def async_set_brightness(self, brightness: float) -> None:
+        """
+        Set the brightness of this crownstone, if dimming enabled.
 
         :param brightness: brightness value between (0 - 1)
+
+        This method is a coroutine.
         """
-        if self.dimming_enabled:
-            if self.dimming_synced_to_crownstone:
-                if brightness < 0 or brightness > 1:
-                    raise ValueError("Enter a value between 0 and 1")
-                else:
-                    await RequestHandler.put('Stones', 'setSwitchStateRemotely', model_id=self.cloud_id,
-                                             command='switchState', value=brightness)
+        if self.abilities[DIMMING_ABILITY].is_enabled:
+            if brightness < 0 or brightness > 1:
+                raise ValueError("Enter a value between 0 and 1")
             else:
-                _LOGGER.error("Dimming is enabled but not synced to crownstone yet. Make sure to be in your sphere "
-                              "and have Bluetooth enabled")
+                await RequestHandler.put(
+                    'Stones', 'setSwitchStateRemotely', model_id=self.cloud_id, command='switchState', value=brightness
+                )
         else:
-            _LOGGER.error("Dimming is not enabled for this crownstone. Go to the crownstone app to enable it")
+            _LOGGER.warning("Dimming is not enabled for this crownstone. Go to the crownstone app to enable it")
 
-    def set_brightness_sync(self, brightness: float) -> None:
-        """
-        Sync set the brightness of this crownstone, if dimming enabled
+    def turn_on(self) -> None:
+        """Turn this Crownstone on."""
+        self.loop.run_until_complete(self.async_turn_on())
 
-        :param brightness: the brightness percentage (0 - 1)
+    def turn_off(self) -> None:
+        """Turn this Crownstone off."""
+        self.loop.run_until_complete(self.async_turn_off())
+
+    def set_brightness(self, brightness: float) -> None:
         """
-        self.loop.run_until_complete(self.set_brightness(brightness))
+        Set the brightness of this crownstone, if dimming enabled.
+
+        :param brightness: the brightness value between (0 - 1)
+        """
+        self.loop.run_until_complete(self.async_set_brightness(brightness))

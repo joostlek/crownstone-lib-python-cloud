@@ -1,4 +1,7 @@
+"""Handler for requests to the Crownstone cloud"""
 import logging
+import json
+from urllib.parse import quote
 from aiohttp import ClientSession
 from typing import Any, Optional
 from crownstone_cloud.const import BASE_URL
@@ -48,6 +51,7 @@ class RequestHandler:
             self,
             model: str,
             endpoint: str,
+            filter: dict = None,
             model_id: str = None
     ) -> dict:
         """
@@ -55,10 +59,13 @@ class RequestHandler:
 
         :param model: model type. users, spheres, stones, locations, devices.
         :param endpoint: endpoints. e.g. spheres, keys, presentPeople.
+        :param filter: filter output or add extra data to output.
         :param model_id: required id for the endpoint. e.g. userId for users, sphereId for spheres.
         :return: Dictionary with the response from the lib.
         """
-        if model_id:
+        if filter and model_id:
+            url = f'{BASE_URL}{model}/{model_id}/{endpoint}?filter={self.quote_json(filter)}&access_token={self.access_token}'
+        elif model_id and not filter:
             url = f'{BASE_URL}{model}/{model_id}/{endpoint}?access_token={self.access_token}'
         else:
             url = f'{BASE_URL}{model}{endpoint}?access_token={self.access_token}'
@@ -124,3 +131,8 @@ class RequestHandler:
         self.access_token = None
         response = await self.post('users', 'login', json=self.login_data)
         self.access_token = response['id']
+
+    @staticmethod
+    def quote_json(_json: dict) -> str:
+        stringified = json.dumps(_json)
+        return quote(stringified)

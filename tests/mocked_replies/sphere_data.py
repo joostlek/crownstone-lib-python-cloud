@@ -17,7 +17,7 @@ sphere_data = [
         "updatedAt": "date_updated"
     },
     {
-        "name": "my_awesome_sphere2",
+        "name": "my_awesome_sphere_2",
         "uid": 42,
         "uuid": "uuid",
         "meshAccessAddress": "mesh_access_address",
@@ -28,7 +28,7 @@ sphere_data = [
             "lat": 42,
             "lng": 42
         },
-        "id": "my_awesome_sphere_id2",
+        "id": "my_awesome_sphere_id_2",
         "ownerId": "owner_id",
         "createdAt": "date_created",
         "updatedAt": "date_updated"
@@ -37,7 +37,7 @@ sphere_data = [
 
 key_data = [
   {
-    "sphereId": "my_awesome_sphere_id2",
+    "sphereId": "my_awesome_sphere_id_2",
     "sphereKeys": [
       {
         "id": "admin_id",

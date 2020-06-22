@@ -1,16 +1,20 @@
 """
 This is an example how to switch a crownstone using the crownstone python cloud lib.
 
-Last update by Ricardo Steijn on 2-6-2020
+Last update by Ricardo Steijn on 22-6-2020
 """
 from crownstone_cloud.lib.cloud import CrownstoneCloud
+import logging
+
+# enable logging
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 # init cloud
 cloud = CrownstoneCloud('email', 'password')
-cloud.initialize_sync()
+cloud.initialize()
 
-# get a crownstone and turn it on
-crownstone = cloud.get_crownstone('AwesomePassword')
-crownstone.turn_on_sync()
+# get a crownstone by name and turn it on
+crownstone_coffee_machine = cloud.get_crownstone('Coffee machine')
+crownstone_coffee_machine.turn_on()
 
-cloud.close_session_sync()
+cloud.close_session()
