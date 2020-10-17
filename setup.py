@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='crownstone-cloud',
-    version='1.2.1',
+    version='2.0.0',
     long_description=long_description,
     long_description_content_type="text/markdown",
     url='https://github.com/crownstone/crownstone-lib-python-cloud',
@@ -14,6 +14,7 @@ setup(
     install_requires=list(package.strip() for package in open('requirements.txt')),
     classifiers=[
         'Programming Language :: Python :: 3.7'
+        'Programming Language :: Python :: 3.8'
     ],
     python_requires='>=3.7',
 )

@@ -8,28 +8,29 @@ Asynchronous Python library to get data from the cloud, and switch Crownstones.
 * Easy to use: sync all your Crownstone Cloud data with just one command!
 * Structurally sound: find your data with ease!
 * Complete: set the switch state and brightness of your Crownstones remotely!
+* Flexible: Login and get the data for multiple accounts at once!
 
 ## Requirements
 
-* Python 3.7 (only version that it's tested on currently)
-* Aiohttp 3.6.1
+* Python 3.7 or higher
+* Aiohttp 3.6.2
 
 ## Standard installation
 
 cd to the project folder and run:
 ```console
-$ python3.7 setup.py install
+$ python setup.py install
 ```
 
 ## Install in a virtual environment
 
-To install the library excute the following command:
+To install the library execute the following command:
 ```console
-$ python3.7 -m venv venv3.7
+$ python -m venv venv
 ```
 Activate your venv using:
 ```console
-$ source venv3.7/bin/activate
+$ source venv/bin/activate
 ```
 Once activated, the venv is used to executed python files, and libraries will be installed in the venv.<br>
 To install this library, cd to the project folder and run:
@@ -43,29 +44,46 @@ $ python setup.py install
 
 #### Async example
 
-```Python
-from crownstone_cloud.lib.cloud import CrownstoneCloud
+```python
+from crownstone_cloud import CrownstoneCloud
 import logging
 import asyncio
 
-# enable logging
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+# Enable logging.
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 
 async def main():
-    # init cloud
-    cloud = CrownstoneCloud('email', 'password')
-    await cloud.async_initialize()
+    # Initialize cloud.
+    cloud = CrownstoneCloud()
+    # Login to the Crownstone Cloud and synchronize all cloud data.
+    # Important is to save your user id which is returned from the function!
+    user_id_1 = await cloud.async_initialize('email_user_1', 'password_user_1')
 
-    # get a crownstone by name that can dim, and put it on 50% brightness
-    crownstone_lamp = cloud.get_crownstone('Lamp')
-    await crownstone_lamp.async_set_brightness(0.5)
+    # Get a crownstone by name that can dim, and put it on 20% brightness for user 1.
+    crownstone_lamp = cloud.get_crownstone('Lamp', user_id_1)
+    await crownstone_lamp.async_set_brightness(20)
 
-    # get a crownstone by name and turn it on
-    crownstone_tv = cloud.get_crownstone('TV')
+    # Login & synchronize data for an other account.
+    user_id_2 = await cloud.async_initialize("email_user_2", "password_user_2")
+
+    # Get a crownstone by name and turn it on for user 2.
+    crownstone_tv = cloud.get_crownstone('TV', user_id_2)
     await crownstone_tv.async_turn_on()
 
-    # close the session after we are done
+    # If you want to update specific data you can get the cloud data object for your user.
+    # This object has all the cloud data for your user saved in it, which was synced with async_initialize()
+    # Parts of the data can also be synced individually without touching the other data.
+    # To sync all data at once, use async_synchronize() instead.
+    my_cloud_data = cloud.get_cloud_data(user_id_1)
+    # Now find the specific sphere object
+    my_sphere = my_cloud_data.find("my_sphere_name")
+    # request to sync only the locations with the cloud
+    my_sphere.locations.async_update_location_data()
+    # get the keys for this sphere so you can use them with the Crownstone BLE python library
+    sphere_keys = my_sphere.async_get_keys()
+
+    # Close the aiohttp clientsession after we are done.
     await cloud.async_close_session()
 
 asyncio.run(main())
@@ -73,47 +91,52 @@ asyncio.run(main())
 
 #### Sync example
 
-```Python
-from crownstone_cloud.lib.cloud import CrownstoneCloud
+```python
+from crownstone_cloud import CrownstoneCloud, run_async
 import logging
 
-# enable logging
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+# Enable logging.
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
-# init cloud
-cloud = CrownstoneCloud('email', 'password')
-cloud.initialize()
+# Initialize cloud.
+cloud = CrownstoneCloud()
+# Use 'run_async' to run async functions in sync context.
+# Login & synchronize all cloud data. Save the user id that the function returns for later use.
+my_user_id = run_async(cloud.async_initialize('email', 'password'))
 
-# get a crownstone by name and turn it on
-crownstone_coffee_machine = cloud.get_crownstone('Coffee machine')
-crownstone_coffee_machine.turn_on()
+# Get a crownstone by name and turn it on.
+crownstone_coffee_machine = cloud.get_crownstone('Coffee machine', my_user_id)
+run_async(crownstone_coffee_machine.async_turn_on())
 
-cloud.close_session()
+# Close the session after we are done.
+run_async(cloud.async_close_session())
 ```
 
 ### Initialization
-Crownstone cloud is initialized with 2 arguments:
+
+The Crownstone cloud can be created without any arguments like so:
+```python
+cloud = CrownstoneCloud()
+```
+A new aiohttp session will be created, which has to be closed at the end of the program.
+If you are using this library in existing software that already uses an own websession, you can use this like so:
+```python
+cloud = CrownstoneCloud(websession)
+```
+To log in to the Crownstone Cloud, the following are required:
+
 * User email
 * User password
 
 If you do not yet have a Crownstone account, go to [My Crownstone](https://my.crownstone.rocks) to set one up.
 The email and password are used to re-login after an access token has expired.
-```Python
-cloud = CrownstoneCloud('email', 'password')
+
+To log in and get all your Crownstone from the cloud:
+```python
+await cloud.async_initialize('email', 'password')
 ```
-if already have an access token and you want to skip to first login for speed you can use:
-```Python
-cloud.set_access_token('myAccessToken')
-```
-to initialize all the cloud data into the lib, for async usage use:
-```Python
-await cloud.async_initialize()
-```
-Or for sync usage use:
-```Python
-cloud.initialize()
-```
-It is only required to call initialize once at the beginning of the program.
+This library supports logging in to multiple accounts. Simply call `async_initialize()` again with the email and
+password of the other account. It is only required to call initialize once for each account.
 
 ## Data structure
 
@@ -144,7 +167,7 @@ Spheres are the main data entry. They have rooms (locations), Crownstones and us
 Example spheres:
 * House
 * Office
-* Apartement
+* Apartment
 
 A Sphere has the following fields in the cloud lib:
 * crownstones: Crownstones
@@ -160,7 +183,7 @@ A Sphere has the following fields in the cloud lib:
 
 Locations are the rooms in your house or other building.<br>
 For example for a house: 
-* Livingroom
+* Living room
 * Bedroom
 * Garage
 * Bathroom
@@ -209,23 +232,24 @@ A User has the following fields in the cloud lib:
 
 ### Cloud
 
-#### async_initialize()
-> Login if no access token available, and sync all data for the user from the cloud.
+#### async_initialize(email: String, password: String)
+> Login and sync all data for the user from the cloud.
 
-#### set_access_token(access_token: String)
-> Set an access token to skip the login part, if you already have one
+#### async_synchronize(user_id: String)
+> Synchronize all data for a user. Use case is to update the local data with new data from the cloud.
+> This function is already called in `async_initialize()` for new logins.
 
-#### get_crownstone(crownstone_name: String) -> Crownstone
-> Get a Crownstone object by name, if it exists.
+#### get_cloud_data(user_id: String)
+> Get the cloud data object for a logged in user.
 
-#### get_crownstone_by_id(crownstone_id: String) -> Crownstone
-> Get a Crownstone object by it's id, it's it exists.
+#### get_crownstone(crownstone_name: String, user_id: String) -> Crownstone
+> Get a Crownstone object by name for a user, if it exists.
+
+#### get_crownstone_by_id(crownstone_id: String, user_id: String) -> Crownstone
+> Get a Crownstone object by it's id for a user, if it exists.
 
 #### async_close_session()
 > Async function. This will close the websession in requestHandler to cleanup nicely after the program has finished.
-
-#### reset()
-> Reset the requestHandler parameters in case the cloud instance was cleaned up and needs to be recreated.
 
 ### Spheres
 
@@ -240,13 +264,18 @@ A User has the following fields in the cloud lib:
 
 ### Sphere
 
+#### async_update_sphere_presence()
+> Async function. Sync the presence of users in the sphere with the cloud.
+
 #### async_get_keys() -> Dict
-> Async function. Returns a dict with the keys of this sphere. The keys can be used for BLE connectivity with the Crownstones.
+> Async function. Returns a dict with the keys of this sphere. 
+> The keys can be used for BLE connectivity with the Crownstones.
 
 ### Crownstones
 
 #### async_update_crownstone_data()
-> Async function. Sync the Crownstones with the cloud for a sphere. Calling the function again after init will update the current data.
+> Async function. Sync the Crownstones with the cloud for a sphere. 
+> Calling the function again after init will update the current data.
 
 #### find(crownstone_name: String) -> Crownstone
 > Return a Crownstone object if one exists by that name.
@@ -257,13 +286,17 @@ A User has the following fields in the cloud lib:
 ### Crownstone
 
 #### async_turn_on()
-> Async function. Send a command to turn a Crownstone on. To make this work make sure to be in the selected sphere and have Bluetooth enabled on your phone.
+> Async function. Send a command to turn a Crownstone on. 
+> To make this work make sure to be in the selected sphere and have Bluetooth enabled on your phone.
 
 #### async_turn_off()
-> Async function. Send a command to turn a Crownstone off. To make this work make sure to be in the selected sphere and have Bluetooth enabled on your phone.
+> Async function. Send a command to turn a Crownstone off. 
+> To make this work make sure to be in the selected sphere and have Bluetooth enabled on your phone.
 
-#### async_set_brightness(value: Float)
-> Async function. Send a command to set a Crownstone to a given brightness level. To make this work make sure to be in the selected sphere and have Bluetooth enabled on your phone.
+#### async_set_brightness(value: Integer)
+> Async function. Send a command to set a Crownstone to a given brightness level. 
+> To make this work make sure to be in the selected sphere and have Bluetooth enabled on your phone.
+> The value parameter should be between 0 and 100.
 
 ### Locations
 
@@ -294,21 +327,30 @@ A User has the following fields in the cloud lib:
 > Return a location object if one exists by that id.
 
 ## Async vs sync
-The lib can be used synchonously and asynchronously.<br>
+The lib can be used synchronously and asynchronously.<br>
+The disadvantage of sync context is that all functions are blocking. 
+The program will simply wait until a function is complete. In async context, functions (coroutines) can yield control,
+which means that functions can be "paused" while they are waiting for external data to come in, like data from a server.
+Other functions can then be executed in the meantime. This way the program is always busy.<br>
+
 All async functions in the library API functions in this library have the prefix **async_**
 Async functions need to be awaited:
 ```Python
-await cloud.spheres.async_update_sphere_data()
+await cloud.async_close_session()
 ```
 All the async functions mentioned above can also be used synchronously.<br>
-Sync functions don't have the async prefix. for example:
+Use the `run_async()` function like so:
 ```Python
-cloud.initialize()
-cloud.spheres.update_sphere_data()
+from crownstone_cloud import run_async
+
+run_async(cloud.async_close_session())
 ```
 Make sure to see the examples above!
 
 ## Testing
+
+### Tests are not up-to-date yet for the newest commit, only run for version 1.2.1.
+
 To run the tests using tox install tox first by running:
 ```console
 $ pip install tox

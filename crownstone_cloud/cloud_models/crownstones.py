@@ -1,10 +1,7 @@
 """Crownstone handler for Crownstone cloud data"""
-from crownstone_cloud._RequestHandlerInstance import RequestHandler
-from crownstone_cloud.const import (
-    DIMMING_ABILITY
-)
+from crownstone_cloud.const import DIMMING_ABILITY
+from typing import Dict, Any
 import logging
-import asyncio
 
 _LOGGER = logging.Logger(__name__)
 
@@ -12,11 +9,11 @@ _LOGGER = logging.Logger(__name__)
 class Crownstones:
     """Handler for the crownstones of a sphere."""
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, sphere_id: str) -> None:
+    def __init__(self, cloud, sphere_id: str) -> None:
         """Initialization."""
-        self.loop = loop
-        self.crownstones = {}
-        self.sphere_id = sphere_id
+        self.cloud = cloud
+        self.crownstones: Dict[str, Crownstone] = {}
+        self.sphere_id: str = sphere_id
 
     def __iter__(self):
         """Iterate over crownstones."""
@@ -27,7 +24,7 @@ class Crownstones:
         # include abilities and current switch state in the request
         data_filter = {"include": ["currentSwitchState", {"abilities": "properties"}]}
         # request data
-        crownstone_data = await RequestHandler.get(
+        crownstone_data = await self.cloud.request_handler.get(
             'Spheres', 'ownedStones', filter=data_filter, model_id=self.sphere_id
         )
         # process items
@@ -43,7 +40,7 @@ class Crownstones:
                 self.crownstones[crownstone_id].data = crownstone
             else:
                 # add new Crownstone
-                self.crownstones[crownstone_id] = Crownstone(self.loop, crownstone)
+                self.crownstones[crownstone_id] = Crownstone(self.cloud, crownstone)
 
             # update the abilities of the Crownstone from the data
             self.crownstones[crownstone_id].update_abilities()
@@ -59,10 +56,6 @@ class Crownstones:
         # remove items from dict
         for crownstone_id in removed_items:
             del self.crownstones[crownstone_id]
-
-    def update_crownstone_data(self) -> None:
-        """Sync function for updating the crownstone data."""
-        self.loop.run_until_complete(self.async_update_crownstone_data())
 
     def find(self, crownstone_name: str) -> object or None:
         """Search for a crownstone by name and return crownstone object if found."""
@@ -86,9 +79,9 @@ class CrownstoneAbility:
 
     def __init__(self, data: dict) -> None:
         """Initialization"""
-        self.data = data
-        self.is_enabled = self.data['enabled']
-        self.properties = self.data['properties']
+        self.data: Dict[str, Any] = data
+        self.is_enabled: bool = self.data['enabled']
+        self.properties: dict = self.data['properties']
 
     @property
     def type(self) -> str:
@@ -109,11 +102,12 @@ class CrownstoneAbility:
 class Crownstone:
     """Represents a Crownstone"""
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, data: dict) -> None:
+    def __init__(self, cloud, data: Dict[str, Any]) -> None:
         """Initialization."""
-        self.loop = loop
-        self.data = data
-        self.abilities = {}
+        self.cloud = cloud
+        self.data: Dict[str, Any] = data
+        self.abilities: Dict[str, CrownstoneAbility] = {}
+        self._context: str = self.cloud.login_manager.get_context()
 
     @property
     def name(self) -> str:
@@ -166,7 +160,10 @@ class Crownstone:
 
         This method is a coroutine.
         """
-        await RequestHandler.put(
+        # make sure to use the context of what the object was created in.
+        self.cloud.login_manager.set_context(self._context)
+        # send a command to the cloud to turn the Crownstone on.
+        await self.cloud.request_handler.put(
             'Stones', 'setSwitchStateRemotely', model_id=self.cloud_id, command='switchState', value=1
         )
 
@@ -176,40 +173,32 @@ class Crownstone:
 
         This method is a coroutine.
         """
-        await RequestHandler.put(
+        # make sure to use the context of what the object was created in.
+        self.cloud.login_manager.set_context(self._context)
+        # send a command to the cloud to turn the Crownstone off.
+        await self.cloud.request_handler.put(
             'Stones', 'setSwitchStateRemotely', model_id=self.cloud_id, command='switchState', value=0
         )
 
-    async def async_set_brightness(self, brightness: float) -> None:
+    async def async_set_brightness(self, brightness: int) -> None:
         """
         Set the brightness of this crownstone, if dimming enabled.
 
-        :param brightness: brightness value between (0 - 1)
+        :param brightness: brightness value between (0 - 100)
 
         This method is a coroutine.
         """
+        # make sure to use the context of what the object was created in.
+        self.cloud.login_manager.set_context(self._context)
+        # check dimming availability & value, and send a command to the cloud to dim the Crownstone.
         if self.abilities[DIMMING_ABILITY].is_enabled:
-            if brightness < 0 or brightness > 1:
-                raise ValueError("Enter a value between 0 and 1")
+            if brightness < 0 or brightness > 100:
+                raise ValueError("Enter a value between 0 and 100")
             else:
-                await RequestHandler.put(
-                    'Stones', 'setSwitchStateRemotely', model_id=self.cloud_id, command='switchState', value=brightness
+                # cloud still uses float value from 0 ... 1
+                float_val = brightness / 100
+                await self.cloud.request_handler.put(
+                    'Stones', 'setSwitchStateRemotely', model_id=self.cloud_id, command='switchState', value=float_val
                 )
         else:
             _LOGGER.warning("Dimming is not enabled for this crownstone. Go to the crownstone app to enable it")
-
-    def turn_on(self) -> None:
-        """Turn this Crownstone on."""
-        self.loop.run_until_complete(self.async_turn_on())
-
-    def turn_off(self) -> None:
-        """Turn this Crownstone off."""
-        self.loop.run_until_complete(self.async_turn_off())
-
-    def set_brightness(self, brightness: float) -> None:
-        """
-        Set the brightness of this crownstone, if dimming enabled.
-
-        :param brightness: the brightness value between (0 - 1)
-        """
-        self.loop.run_until_complete(self.async_set_brightness(brightness))

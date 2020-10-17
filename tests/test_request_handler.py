@@ -1,5 +1,5 @@
 import asynctest
-from crownstone_cloud.lib.requestHandler import RequestHandler
+from crownstone_cloud.helpers.requests import RequestHandler
 from tests.mocked_replies.errors import (
     auth_error,
     access_token_expired,

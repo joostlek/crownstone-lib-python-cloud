@@ -1,7 +1,7 @@
 import asynctest
 import asyncio
 import aiohttp
-from crownstone_cloud.lib.cloud import CrownstoneCloud
+from crownstone_cloud.cloud.cloud import CrownstoneCloud
 from crownstone_cloud._RequestHandlerInstance import RequestHandler
 from tests.mocked_replies.login_data import login_data
 from tests.mocked_replies.sphere_data import (
@@ -18,7 +18,7 @@ from tests.mocked_replies.location_data import (
     location_data_removed,
     presence_data
 )
-from crownstone_cloud.lib.cloudModels.spheres import Spheres
+from crownstone_cloud.cloud.cloud_models.spheres import Spheres
 from crownstone_cloud.const import (
     DIMMING_ABILITY,
     TAP_TO_TOGGLE_ABILITY

@@ -1,19 +1,18 @@
 """Sphere handler for Crownstone cloud data."""
-from crownstone_cloud._RequestHandlerInstance import RequestHandler
-from crownstone_cloud.lib.cloudModels.crownstones import Crownstones
-from crownstone_cloud.lib.cloudModels.locations import Locations
-from crownstone_cloud.lib.cloudModels.users import Users
-import asyncio
+from crownstone_cloud.cloud_models.crownstones import Crownstones
+from crownstone_cloud.cloud_models.locations import Locations
+from crownstone_cloud.cloud_models.users import Users
+from typing import Dict, Any
 
 
 class Spheres:
     """Handler for the spheres of the user."""
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, user_id: str) -> None:
+    def __init__(self, cloud, user_id: str) -> None:
         """Initialization."""
-        self.loop = loop
-        self.spheres = {}
-        self.user_id = user_id
+        self.cloud = cloud
+        self.spheres: Dict[str, Sphere] = {}
+        self.user_id: str = user_id
 
     def __iter__(self):
         """Iterate over spheres."""
@@ -25,7 +24,7 @@ class Spheres:
 
         This method is a coroutine.
         """
-        sphere_data = await RequestHandler.get(
+        sphere_data = await self.cloud.request_handler.get(
             'users', 'spheres', model_id=self.user_id
         )
         # process items
@@ -41,7 +40,7 @@ class Spheres:
                 self.spheres[sphere_id].data = sphere
             else:
                 # add new Sphere
-                self.spheres[sphere_id] = Sphere(self.loop, sphere, self.user_id)
+                self.spheres[sphere_id] = Sphere(self.cloud, sphere, self.user_id)
 
             # generate list with new id's to check with the existing id's
             new_items.append(sphere_id)
@@ -54,10 +53,6 @@ class Spheres:
         # remove items from dict
         for sphere_id in removed_items:
             del self.spheres[sphere_id]
-
-    def update_sphere_data(self) -> None:
-        """Get the sphere data from the cloud."""
-        self.loop.run_until_complete(self.async_update_sphere_data())
 
     def find(self, sphere_name: str) -> object or None:
         """Search for a sphere by name and return sphere object if found."""
@@ -73,18 +68,19 @@ class Spheres:
 
 
 class Sphere:
-    """Represents a Sphere"""
+    """Represents a Sphere."""
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, data: dict, user_id: str):
+    def __init__(self, cloud, data: Dict[str, Any], user_id: str) -> None:
         """Initialization."""
-        self.loop = loop
-        self.data = data
-        self.user_id = user_id
-        self.crownstones = Crownstones(loop, self.cloud_id)
-        self.locations = Locations(loop, self.cloud_id)
-        self.users = Users(loop, self.cloud_id)
-        self.keys: dict = {}
-        self.present_people = []
+        self.cloud = cloud
+        self.data: Dict[str, Any] = data
+        self.user_id: str = user_id
+        self._context = self.cloud.login_manager.get_context()
+        self.crownstones = Crownstones(self.cloud, self.cloud_id)
+        self.locations = Locations(self.cloud, self.cloud_id)
+        self.users = Users(self.cloud, self.cloud_id)
+        self.keys: Dict[str, str] = {}
+        self.present_people: list = []
 
     @property
     def name(self) -> str:
@@ -107,7 +103,10 @@ class Sphere:
 
         This method is a coroutine.
         """
-        keys = await RequestHandler.get('users', 'keysV2', model_id=self.user_id)
+        # make sure to use the context of what the object was created in.
+        self.cloud.login_manager.set_context(self._context)
+        # get & reformat keys.
+        keys = await self.cloud.request_handler.get('users', 'keysV2', model_id=self.user_id)
         for key_set in keys:
             if key_set['sphereId'] == self.cloud_id:
                 for keyType in key_set['sphereKeys']:
@@ -121,11 +120,10 @@ class Sphere:
 
         This method is a coroutine.
         """
+        # make sure to use the context of what the object was created in.
+        self.cloud.login_manager.set_context(self._context)
+        # get presence and create a list with user id's who are in the sphere.
         self.present_people = []
-        presence_data = await RequestHandler.get('Spheres', 'presentPeople', model_id=self.cloud_id)
+        presence_data = await self.cloud.request_handler.get('Spheres', 'presentPeople', model_id=self.cloud_id)
         for user in presence_data:
             self.present_people.append(user['userId'])
-
-    def get_keys(self) -> dict:
-        """Get the user keys for this Sphere, that can be used for BLE (optional)."""
-        return self.loop.run_until_complete(self.async_get_keys())

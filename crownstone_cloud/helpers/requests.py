@@ -1,12 +1,18 @@
 """Handler for requests to the Crownstone cloud"""
 import logging
-import json
-from urllib.parse import quote
-from aiohttp import ClientSession
-from typing import Any, Optional
-from crownstone_cloud.const import BASE_URL
+from aiohttp import ClientSession, ContentTypeError
+from typing import Any, Dict
+from crownstone_cloud.helpers.aiohttp_client import create_clientsession
+from crownstone_cloud.helpers.conversion import quote_json
+from crownstone_cloud.const import (
+    BASE_URL, 
+    LOGIN_URL, 
+    ACCESS_TOKEN, 
+    LOGIN_DATA
+)
 from crownstone_cloud.exceptions import (
     CrownstoneAuthenticationError,
+    CrownstoneConnectionError,
     CrownstoneUnknownError,
     AuthError
 )
@@ -15,19 +21,24 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class RequestHandler:
-    """Handles requests to the Crownstone lib."""
+    """Handles requests to the Crownstone cloud."""
 
-    def __init__(self) -> None:
-        self.access_token: Optional[str] = None
-        self.websession: Optional[ClientSession] = None
-        self.login_data: Optional[dict] = None
+    def __init__(self, cloud, clientsession: ClientSession = None) -> None:
+        self.cloud = cloud
+        self.client_session = clientsession or create_clientsession()
+
+    async def request_login(self, login_data: Dict[str, str]) -> dict:
+        """Request a login to the Crownstone Cloud API."""
+        response = await self.request('post', LOGIN_URL, login_data)
+
+        return response
 
     async def post(
             self,
             model: str,
             endpoint: str,
             model_id: str = None,
-            json: dict = None
+            json: Dict[str, Any] = None
     ) -> dict:
         """
         Post request
@@ -36,14 +47,13 @@ class RequestHandler:
         :param endpoint: endpoints. e.g. spheres, keys, presentPeople.
         :param model_id: required id for the endpoint. e.g. userId for users, sphereId for spheres.
         :param json: Dictionary with the data that should be posted.
-        :return: Dictionary with the response from the lib.
+        :return: Dictionary with the response from the cloud.
         """
-        if self.access_token is None:
-            url = f'{BASE_URL}{model}/{endpoint}'
-        elif model_id:
-            url = f'{BASE_URL}{model}/{model_id}/{endpoint}?access_token={self.access_token}'
+        if model_id:
+            url = f'{BASE_URL}{model}/{model_id}/{endpoint}?access_token=' \
+                  f'{self.cloud.login_manager.get_from_context(ACCESS_TOKEN)}'
         else:
-            url = f'{BASE_URL}{model}{endpoint}?access_token={self.access_token}'
+            url = f'{BASE_URL}{model}{endpoint}?access_token={self.cloud.login_manager.get_from_context(ACCESS_TOKEN)}'
 
         return await self.request('post', url, json)
 
@@ -51,7 +61,7 @@ class RequestHandler:
             self,
             model: str,
             endpoint: str,
-            filter: dict = None,
+            filter: Dict[str, str] = None,
             model_id: str = None
     ) -> dict:
         """
@@ -61,14 +71,16 @@ class RequestHandler:
         :param endpoint: endpoints. e.g. spheres, keys, presentPeople.
         :param filter: filter output or add extra data to output.
         :param model_id: required id for the endpoint. e.g. userId for users, sphereId for spheres.
-        :return: Dictionary with the response from the lib.
+        :return: Dictionary with the response from the cloud.
         """
         if filter and model_id:
-            url = f'{BASE_URL}{model}/{model_id}/{endpoint}?filter={self.quote_json(filter)}&access_token={self.access_token}'
+            url = f'{BASE_URL}{model}/{model_id}/{endpoint}?filter={quote_json(filter)}&access_token=' \
+                  f'{self.cloud.login_manager.get_from_context(ACCESS_TOKEN)}'
         elif model_id and not filter:
-            url = f'{BASE_URL}{model}/{model_id}/{endpoint}?access_token={self.access_token}'
+            url = f'{BASE_URL}{model}/{model_id}/{endpoint}?access_token=' \
+                  f'{self.cloud.login_manager.get_from_context(ACCESS_TOKEN)}'
         else:
-            url = f'{BASE_URL}{model}{endpoint}?access_token={self.access_token}'
+            url = f'{BASE_URL}{model}{endpoint}?access_token={self.cloud.login_manager.get_from_context(ACCESS_TOKEN)}'
 
         return await self.request('get', url)
 
@@ -88,23 +100,29 @@ class RequestHandler:
         :param model_id: required id for the endpoint. e.g. userId for users, sphereId for spheres.
         :param command: used for command requests. e.g. 'switchState'.
         :param value: the value to be put for the command. e.g 'switchState', 1
-        :return: Dictionary with the response from the lib.
+        :return: Dictionary with the response from the cloud.
         """
-        url = f'{BASE_URL}{model}/{model_id}/{endpoint}?{command}={str(value)}&access_token={self.access_token}'
+        url = f'{BASE_URL}{model}/{model_id}/{endpoint}?{command}={str(value)}&access_token=' \
+              f'{self.cloud.login_manager.get_from_context(ACCESS_TOKEN)}'
 
         return await self.request('put', url)
 
-    async def request(self, method: str, url: str, json: dict = None) -> dict:
+    async def request(self, method: str, url: str, json: Dict[str, Any] = None) -> dict:
         """Make request and check data for errors"""
-        async with self.websession.request(method, url, json=json) as result:
-            data = await result.json()
+        async with self.client_session.request(method, url, json=json) as result:
+            try:
+                data = await result.json()
+            except ContentTypeError:
+                # when the cloud is unavailable, a payload can be received that can't be converted to a dictionary.
+                raise CrownstoneConnectionError("Error connecting to the Crownstone Cloud.")
             refresh = await self.raise_on_error(data)
             if refresh:
-                new_url = url.replace(url.split('access_token=', 1)[1], self.access_token)
+                new_url = url.replace(url.split('access_token=', 1)[1],
+                                      self.cloud.login_manager.get_from_context(ACCESS_TOKEN))
                 await self.request(method, new_url, json=json)
             return data
 
-    async def raise_on_error(self, data) -> bool:
+    async def raise_on_error(self, data: Dict[str, Any]) -> bool:
         """Check for error message"""
         if isinstance(data, dict) and 'error' in data:
             error = data['error']
@@ -114,7 +132,9 @@ class RequestHandler:
                 try:
                     if error_type == 'INVALID_TOKEN' or error_type == 'AUTHORIZATION_REQUIRED':
                         _LOGGER.warning("Token expired. Refreshing now...")
-                        await self.refresh_token()
+                        # Login using existing data
+                        response = await self.request_login(self.cloud.login_manager.get_from_context(LOGIN_DATA))
+                        self.cloud.login_manager.set_in_context(ACCESS_TOKEN, response['id'])
                         return True  # re-run the request
                     else:
                         for type, message in AuthError.items():
@@ -126,13 +146,3 @@ class RequestHandler:
                 _LOGGER.error(error['message'])
 
         return False
-
-    async def refresh_token(self):
-        self.access_token = None
-        response = await self.post('users', 'login', json=self.login_data)
-        self.access_token = response['id']
-
-    @staticmethod
-    def quote_json(_json: dict) -> str:
-        stringified = json.dumps(_json)
-        return quote(stringified)

@@ -1,16 +1,15 @@
 """Location handler for Crownstone cloud data."""
-from crownstone_cloud._RequestHandlerInstance import RequestHandler
-import asyncio
+from typing import Dict, Any
 
 
 class Locations:
     """Handler for the locations of a sphere."""
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, sphere_id: str) -> None:
+    def __init__(self, cloud, sphere_id: str) -> None:
         """Initialization."""
-        self.loop = loop
-        self.locations = {}
-        self.sphere_id = sphere_id
+        self.cloud = cloud
+        self.locations: Dict[str, Location] = {}
+        self.sphere_id: str = sphere_id
 
     def __iter__(self):
         """Iterate over locations."""
@@ -22,7 +21,7 @@ class Locations:
 
         This method is a coroutine.
         """
-        location_data = await RequestHandler.get(
+        location_data = await self.cloud.request_handler.get(
             'Spheres', 'ownedLocations', model_id=self.sphere_id
         )
         # process items
@@ -58,7 +57,7 @@ class Locations:
 
         This method is a coroutine.
         """
-        presence_data = await RequestHandler.get(
+        presence_data = await self.cloud.request_handler.get(
             'Spheres', 'presentPeople', model_id=self.sphere_id
         )
         # reset the presence
@@ -70,10 +69,6 @@ class Locations:
                 for location in self.locations.values():
                     if present_location == location.cloud_id:
                         location.present_people.append(presence['userId'])
-
-    def update_location_data(self) -> None:
-        """Update the location data."""
-        self.loop.run_until_complete(self.async_update_location_data())
 
     def find(self, location_name: str) -> object or None:
         """Search for a sphere by name and return sphere object if found."""
@@ -91,10 +86,10 @@ class Locations:
 class Location:
     """Represents a Location."""
 
-    def __init__(self, data: dict):
+    def __init__(self, data: Dict[str, Any]) -> None:
         """Initialization."""
-        self.data = data
-        self.present_people = []
+        self.data: Dict[str, Any] = data
+        self.present_people: list = []
 
     @property
     def name(self) -> str:

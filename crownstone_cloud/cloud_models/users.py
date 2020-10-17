@@ -1,16 +1,15 @@
 """User handler for Crownstone cloud data."""
-from crownstone_cloud._RequestHandlerInstance import RequestHandler
-import asyncio
+from typing import Dict, Any
 
 
 class Users:
     """Handler for the users in a sphere."""
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, sphere_id: str) -> None:
+    def __init__(self, cloud, sphere_id: str) -> None:
         """Initialization."""
-        self.loop = loop
-        self.users = {}
-        self.sphere_id = sphere_id
+        self.cloud = cloud
+        self.users: Dict[str, User] = {}
+        self.sphere_id: str = sphere_id
 
     def __iter__(self):
         """Iterate over users."""
@@ -22,7 +21,7 @@ class Users:
 
         This method is a coroutine.
         """
-        user_data = await RequestHandler.get(
+        user_data = await self.cloud.request_handler.get(
             'Spheres', 'users', model_id=self.sphere_id
         )
         # process items
@@ -53,10 +52,6 @@ class Users:
         for user_id in removed_items:
             del self.users[user_id]
 
-    def update_user_data(self) -> None:
-        """Update the user data for a sphere."""
-        self.loop.run_until_complete(self.async_update_user_data())
-
     def find_by_first_name(self, first_name: str) -> list:
         """Search for a user by first name and return a list with the users found."""
         found_users = []
@@ -75,7 +70,7 @@ class Users:
 
         return found_users
 
-    def find_by_id(self, user_id) -> object or None:
+    def find_by_id(self, user_id: str) -> object or None:
         """Search for a user by id and return crownstone object if found."""
         return self.users[user_id]
 
@@ -83,10 +78,10 @@ class Users:
 class User:
     """Represents a user in a sphere."""
 
-    def __init__(self, data: dict, role: str) -> None:
+    def __init__(self, data: Dict[str, Any], role: str) -> None:
         """Initialization."""
-        self.data = data
-        self.role = role
+        self.data: Dict[str, Any] = data
+        self.role: str = role
 
     @property
     def first_name(self) -> str:
