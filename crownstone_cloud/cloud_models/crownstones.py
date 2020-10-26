@@ -140,14 +140,18 @@ class Crownstone:
         return self.data['icon']
 
     @property
-    def state(self) -> float:
-        """Return the last reported state for this Crownstone."""
-        return self.data['currentSwitchState']['switchState']
+    def state(self) -> int:
+        """Return the last reported switch state (0 - 100) of this Crownstone."""
+        return self.data['currentSwitchStateV2']['switchState']
 
     @state.setter
-    def state(self, value: float) -> None:
-        """Set a new state for this Crownstone."""
-        self.data['currentSwitchState']['switchState'] = value
+    def state(self, value: int) -> None:
+        """
+        Set a new switch state (0 - 100) of this Crownstone.
+
+        Only updates state in cloud, does not send a switch command to the actual Crownstone.
+        """
+        self.data['currentSwitchStateV2']['switchState'] = value
 
     def update_abilities(self) -> None:
         """Add/update the abilities for this Crownstone."""
@@ -163,8 +167,8 @@ class Crownstone:
         # make sure to use the context of what the object was created in.
         self.cloud.login_manager.set_context(self._context)
         # send a command to the cloud to turn the Crownstone on.
-        await self.cloud.request_handler.put(
-            'Stones', 'setSwitchStateRemotely', model_id=self.cloud_id, command='switchState', value=1
+        await self.cloud.request_handler.post(
+            'Stones', 'switch', model_id=self.cloud_id, json={"type": "TURN_ON"}
         )
 
     async def async_turn_off(self) -> None:
@@ -176,8 +180,8 @@ class Crownstone:
         # make sure to use the context of what the object was created in.
         self.cloud.login_manager.set_context(self._context)
         # send a command to the cloud to turn the Crownstone off.
-        await self.cloud.request_handler.put(
-            'Stones', 'setSwitchStateRemotely', model_id=self.cloud_id, command='switchState', value=0
+        await self.cloud.request_handler.post(
+            'Stones', 'switch', model_id=self.cloud_id, json={"type": "TURN_OFF"}
         )
 
     async def async_set_brightness(self, brightness: int) -> None:
@@ -195,10 +199,9 @@ class Crownstone:
             if brightness < 0 or brightness > 100:
                 raise ValueError("Enter a value between 0 and 100")
             else:
-                # cloud still uses float value from 0 ... 1
-                float_val = brightness / 100
-                await self.cloud.request_handler.put(
-                    'Stones', 'setSwitchStateRemotely', model_id=self.cloud_id, command='switchState', value=float_val
+                await self.cloud.request_handler.post(
+                    'Stones', 'switch', model_id=self.cloud_id, json={"type": "PERCENTAGE","percentage": brightness}
                 )
         else:
             _LOGGER.warning("Dimming is not enabled for this crownstone. Go to the crownstone app to enable it")
+            # TODO: raise error, or just try to set brightness anyway?

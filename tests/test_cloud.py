@@ -155,11 +155,11 @@ class TestCrownstoneCloud(asynctest.TestCase):
         # test setting brightness of a crownstone
         with asynctest.patch.object(RequestHandler, 'put') as brightness_mock:
             # test if it doesn't run if dimming not enabled
-            await crownstone_by_id.async_set_brightness(0.5)
+            await crownstone_by_id.async_set_brightness(50)
             brightness_mock.assert_not_called()
             # test error when wrong value is given
             with self.assertRaises(ValueError):
-                await crownstone.async_set_brightness(2)
+                await crownstone.async_set_brightness(101)
 
     def tearDown(self) -> None:
         self.cloud.close_session()
