@@ -20,7 +20,7 @@ crownstone_data = [
         "createdAt": "date_created",
         "updatedAt": "date_updated",
         "currentSwitchStateId": "switch_state_id",
-        "currentSwitchState": {
+        "currentSwitchStateV2": {
             "timestamp": "date_updated",
             "switchState": 0
         },
@@ -91,7 +91,7 @@ crownstone_data = [
         "createdAt": "date_created",
         "updatedAt": "date_updated",
         "currentSwitchStateId": "switch_state_id",
-        "currentSwitchState": {
+        "currentSwitchStateV2": {
             "timestamp": "date_updated",
             "switchState": 0
         },

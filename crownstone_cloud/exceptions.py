@@ -6,16 +6,13 @@ AuthError = {
     'LOGIN_FAILED_EMAIL_NOT_VERIFIED': 'Email has not been verified, please do that first',
 }
 
-DataError = {
-    'DOES_NOT_EXIST': 'Data does not exist',
-    'ALREADY_EXISTS': 'Data already exists'
+AbilityError = {
+    'NOT_ENABLED': 'This ability is not enabled. Use the Crownstone App to enable it.',
 }
 
 
 class CrownstoneException(Exception):
     """Raised when authentication with API ended in error"""
-    exception_type = None
-    message = None
 
     def __init__(self, exception_type, message=None):
         self.type = exception_type
@@ -34,5 +31,5 @@ class CrownstoneConnectionError(Exception):
     """Raised when a connection to the Crownstone Cloud can't be made."""
 
 
-class CrownstoneDataError(CrownstoneException):
-    """Raised when an object is not found in a dictionary containing Crownstone data."""
+class CrownstoneAbilityError(CrownstoneException):
+    """Raised when when e.g. dimming command is requested when it is not enabled."""

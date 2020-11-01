@@ -45,7 +45,7 @@ $ python setup.py install
 #### Async example
 
 ```python
-from crownstone_cloud import CrownstoneCloud
+from crownstone_cloud import CrownstoneCloud, create_clientsession
 import logging
 import asyncio
 
@@ -54,37 +54,38 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 
 async def main():
+    # Every instance creates it's own websession for easy accessibility, however using 1 websession is recommended.
+    # Create your websession like so:
+    websession = create_clientsession()
     # Initialize cloud.
-    cloud = CrownstoneCloud()
+    cloud_user_1 = CrownstoneCloud('email_user_1', 'password_user_1', websession)
     # Login to the Crownstone Cloud and synchronize all cloud data.
-    # Important is to save your user id which is returned from the function!
-    user_id_1 = await cloud.async_initialize('email_user_1', 'password_user_1')
+    await cloud_user_1.async_initialize()
 
-    # Get a crownstone by name that can dim, and put it on 20% brightness for user 1.
-    crownstone_lamp = cloud.get_crownstone('Lamp', user_id_1)
+    # Get a crownstone by name that can dim, and put it on 20% brightness for user 1
+    crownstone_lamp = cloud_user_1.get_crownstone('Lamp')
     await crownstone_lamp.async_set_brightness(20)
 
     # Login & synchronize data for an other account.
-    user_id_2 = await cloud.async_initialize("email_user_2", "password_user_2")
+    cloud_user_2 = CrownstoneCloud('email_user_2', 'password_user_2', websession)
+    await cloud_user_2.async_initialize()
 
     # Get a crownstone by name and turn it on for user 2.
-    crownstone_tv = cloud.get_crownstone('TV', user_id_2)
+    crownstone_tv = cloud_user_2.get_crownstone('TV')
     await crownstone_tv.async_turn_on()
 
     # If you want to update specific data you can get the cloud data object for your user.
     # This object has all the cloud data for your user saved in it, which was synced with async_initialize()
     # Parts of the data can also be synced individually without touching the other data.
     # To sync all data at once, use async_synchronize() instead.
-    my_cloud_data = cloud.get_cloud_data(user_id_1)
-    # Now find the specific sphere object
-    my_sphere = my_cloud_data.find("my_sphere_name")
+    my_sphere = cloud_user_1.cloud_data.find("my_sphere_name")
     # request to sync only the locations with the cloud
     my_sphere.locations.async_update_location_data()
     # get the keys for this sphere so you can use them with the Crownstone BLE python library
     sphere_keys = my_sphere.async_get_keys()
 
     # Close the aiohttp clientsession after we are done.
-    await cloud.async_close_session()
+    await websession.close()
 
 asyncio.run(main())
 ```
@@ -99,13 +100,13 @@ import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 # Initialize cloud.
-cloud = CrownstoneCloud()
+cloud = CrownstoneCloud('email', 'password')
 # Use 'run_async' to run async functions in sync context.
-# Login & synchronize all cloud data. Save the user id that the function returns for later use.
-my_user_id = run_async(cloud.async_initialize('email', 'password'))
+# Login & synchronize all cloud data.
+run_async(cloud.async_initialize())
 
 # Get a crownstone by name and turn it on.
-crownstone_coffee_machine = cloud.get_crownstone('Coffee machine', my_user_id)
+crownstone_coffee_machine = cloud.get_crownstone('Coffee machine')
 run_async(crownstone_coffee_machine.async_turn_on())
 
 # Close the session after we are done.
@@ -114,29 +115,23 @@ run_async(cloud.async_close_session())
 
 ### Initialization
 
-The Crownstone cloud can be created without any arguments like so:
+The Crownstone cloud is initialized with the email and password of a user:
 ```python
-cloud = CrownstoneCloud()
+cloud = CrownstoneCloud('email', 'password')
 ```
-A new aiohttp session will be created, which has to be closed at the end of the program.
-If you are using this library in existing software that already uses an own websession, you can use this like so:
-```python
-cloud = CrownstoneCloud(websession)
-```
-To log in to the Crownstone Cloud, the following are required:
-
-* User email
-* User password
-
 If you do not yet have a Crownstone account, go to [My Crownstone](https://my.crownstone.rocks) to set one up.
 The email and password are used to re-login after an access token has expired.
 
+You can log into multiple accounts by creating more CrownstoneCloud objects. When doing so, it is recommended to use
+only 1 websession for all your requests. Create a websession and append it as parameter to all your CrownstoneCloud
+objects. Take a look at the async example above.
+```python
+cloud = CrownstoneCloud('email', 'password', websession)
+```
 To log in and get all your Crownstone from the cloud:
 ```python
-await cloud.async_initialize('email', 'password')
+await cloud.async_initialize()
 ```
-This library supports logging in to multiple accounts. Simply call `async_initialize()` again with the email and
-password of the other account. It is only required to call initialize once for each account.
 
 ## Data structure
 
@@ -205,7 +200,7 @@ Example names of Crownstones:
 
 A Crownstone has the following fields in the cloud lib:
 * abilities: Dict
-* state: Float (0..1)
+* state: Int (0..100)
 * name: String
 * unique_id: String
 * cloud_id: String
@@ -232,20 +227,17 @@ A User has the following fields in the cloud lib:
 
 ### Cloud
 
-#### async_initialize(email: String, password: String)
+#### async_initialize()
 > Login and sync all data for the user from the cloud.
 
-#### async_synchronize(user_id: String)
+#### async_synchronize()
 > Synchronize all data for a user. Use case is to update the local data with new data from the cloud.
-> This function is already called in `async_initialize()` for new logins.
+> This function is already called in `async_initialize()`.
 
-#### get_cloud_data(user_id: String)
-> Get the cloud data object for a logged in user.
-
-#### get_crownstone(crownstone_name: String, user_id: String) -> Crownstone
+#### get_crownstone(crownstone_name: String) -> Crownstone
 > Get a Crownstone object by name for a user, if it exists.
 
-#### get_crownstone_by_id(crownstone_id: String, user_id: String) -> Crownstone
+#### get_crownstone_by_id(crownstone_id: String) -> Crownstone
 > Get a Crownstone object by it's id for a user, if it exists.
 
 #### async_close_session()
@@ -349,8 +341,6 @@ Make sure to see the examples above!
 
 ## Testing
 
-### Tests are not up-to-date yet for the newest commit, only run for version 1.2.1.
-
 To run the tests using tox install tox first by running:
 ```console
 $ pip install tox
@@ -359,7 +349,7 @@ To execute the tests cd to the project folder and run:
 ```console
 $ tox
 ```
-To see which parts of the code are covered by the tests, a coverage report is generated after the tests have been successfull.<br>
+To see which parts of the code are covered by the tests, a coverage report is generated after the tests have been successful.<br>
 To see the coverage report run:
 ```console
 $ coverage report

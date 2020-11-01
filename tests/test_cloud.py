@@ -1,8 +1,15 @@
 import asynctest
-import asyncio
 import aiohttp
-from crownstone_cloud.cloud.cloud import CrownstoneCloud
-from crownstone_cloud._RequestHandlerInstance import RequestHandler
+
+from crownstone_cloud import CrownstoneCloud
+from crownstone_cloud.helpers.requests import RequestHandler
+from crownstone_cloud.exceptions import CrownstoneAbilityError, AbilityError
+from crownstone_cloud.cloud_models.spheres import Spheres
+from crownstone_cloud.const import (
+    DIMMING_ABILITY,
+    TAP_TO_TOGGLE_ABILITY
+)
+
 from tests.mocked_replies.login_data import login_data
 from tests.mocked_replies.sphere_data import (
     sphere_data,
@@ -18,75 +25,43 @@ from tests.mocked_replies.location_data import (
     location_data_removed,
     presence_data
 )
-from crownstone_cloud.cloud.cloud_models.spheres import Spheres
-from crownstone_cloud.const import (
-    DIMMING_ABILITY,
-    TAP_TO_TOGGLE_ABILITY
-)
 
 
 class TestCrownstoneCloud(asynctest.TestCase):
     """Test the main class"""
 
-    def setUp(self):
-        self.cloud = CrownstoneCloud('email', 'password')
-        self.test_loop = asyncio.new_event_loop()
-
     async def test_init(self):
-        assert isinstance(self.cloud.loop, asyncio.AbstractEventLoop)
-        assert isinstance(RequestHandler.websession, aiohttp.ClientSession)
+        cloud = CrownstoneCloud('email', 'password')
+        assert isinstance(cloud.request_handler.client_session, aiohttp.ClientSession)
 
-        self.cloud = CrownstoneCloud('email', 'password', loop=self.test_loop)
-        assert self.cloud.loop == self.test_loop
+        await cloud.async_close_session()
 
-    async def test_initialize(self):
-        # test init, only logging in when there's no access token
-        with asynctest.patch.object(CrownstoneCloud, 'async_login') as login_mock:
-            with asynctest.patch.object(CrownstoneCloud, 'async_synchronize') as sync_mock:
-                await self.cloud.async_initialize()
-        # test called and awaited
-        login_mock.assert_called()
-        login_mock.assert_awaited()
-        # test called and awaited
-        sync_mock.assert_called()
-        sync_mock.assert_awaited()
-
-        RequestHandler.access_token = 'access_token'
-
-        with asynctest.patch.object(CrownstoneCloud, 'async_login') as login_mock:
-            with asynctest.patch.object(CrownstoneCloud, 'async_synchronize') as sync_mock:
-                await self.cloud.async_initialize()
-        # test not called
-        login_mock.assert_not_called()
-        # test called and awaited
-        sync_mock.assert_called()
-        sync_mock.assert_awaited()
-
-    def test_set_access_token(self):
-        self.cloud.set_access_token('new_access_token')
-        assert RequestHandler.access_token == 'new_access_token'
-
-    @asynctest.patch.object(RequestHandler, 'post')
-    async def test_login(self, mock_request):
+    @asynctest.patch.object(RequestHandler, 'request_login')
+    @asynctest.patch.object(CrownstoneCloud, 'async_synchronize')
+    async def test_initialize(self, mock_sync, mock_request):
+        cloud = CrownstoneCloud('email', 'password')
         # patch the result of login request
         mock_request.return_value = login_data
-        await self.cloud.async_login()
-        assert RequestHandler.access_token == 'my_access_token'
-        assert self.cloud.spheres.user_id == 'user_id'
+        await cloud.async_initialize()
+        assert cloud.access_token == 'my_access_token'
+        assert cloud.cloud_data.user_id == 'user_id'
+
+        await cloud.async_close_session()
 
     @asynctest.patch.object(RequestHandler, 'get')
     async def test_data_structure(self, mock_request):
+        cloud = CrownstoneCloud('email', 'password')
         # create fake instance
-        self.cloud.spheres = Spheres(self.test_loop, 'user_id')
+        cloud.spheres = Spheres(cloud, 'user_id')
         # add fake sphere data for test
         mock_request.return_value = sphere_data
-        await self.cloud.spheres.async_update_sphere_data()
+        await cloud.spheres.async_update_sphere_data()
         mock_request.assert_awaited()
 
         # test getting a sphere by id and name
-        sphere = self.cloud.spheres.find_by_id('my_awesome_sphere_id_2')
+        sphere = cloud.spheres.find_by_id('my_awesome_sphere_id_2')
         assert sphere.cloud_id == 'my_awesome_sphere_id_2'
-        sphere2 = self.cloud.spheres.find('my_awesome_sphere')
+        sphere2 = cloud.spheres.find('my_awesome_sphere')
         assert sphere2.name == 'my_awesome_sphere'
 
         # test getting keys
@@ -155,11 +130,13 @@ class TestCrownstoneCloud(asynctest.TestCase):
         # test setting brightness of a crownstone
         with asynctest.patch.object(RequestHandler, 'put') as brightness_mock:
             # test if it doesn't run if dimming not enabled
-            await crownstone_by_id.async_set_brightness(50)
+            with self.assertRaises(CrownstoneAbilityError) as ability_err:
+                await crownstone_by_id.async_set_brightness(50)
+
+            assert ability_err.exception.type == AbilityError['NOT_ENABLED']
             brightness_mock.assert_not_called()
             # test error when wrong value is given
             with self.assertRaises(ValueError):
                 await crownstone.async_set_brightness(101)
 
-    def tearDown(self) -> None:
-        self.cloud.close_session()
+        await cloud.async_close_session()

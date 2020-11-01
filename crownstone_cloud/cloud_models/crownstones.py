@@ -1,5 +1,9 @@
 """Crownstone handler for Crownstone cloud data"""
 from crownstone_cloud.const import DIMMING_ABILITY
+from crownstone_cloud.exceptions import (
+    CrownstoneAbilityError,
+    AbilityError
+)
 from typing import Dict, Any
 import logging
 
@@ -22,7 +26,7 @@ class Crownstones:
     async def async_update_crownstone_data(self) -> None:
         """Get the crownstones data from the cloud."""
         # include abilities and current switch state in the request
-        data_filter = {"include": ["currentSwitchState", {"abilities": "properties"}]}
+        data_filter = {"include": ["currentSwitchStateV2", {"abilities": "properties"}]}
         # request data
         crownstone_data = await self.cloud.request_handler.get(
             'Spheres', 'ownedStones', filter=data_filter, model_id=self.sphere_id
@@ -107,7 +111,8 @@ class Crownstone:
         self.cloud = cloud
         self.data: Dict[str, Any] = data
         self.abilities: Dict[str, CrownstoneAbility] = {}
-        self._context: str = self.cloud.login_manager.get_context()
+        # power usage (W)
+        self.power_usage = None
 
     @property
     def name(self) -> str:
@@ -164,8 +169,6 @@ class Crownstone:
 
         This method is a coroutine.
         """
-        # make sure to use the context of what the object was created in.
-        self.cloud.login_manager.set_context(self._context)
         # send a command to the cloud to turn the Crownstone on.
         await self.cloud.request_handler.post(
             'Stones', 'switch', model_id=self.cloud_id, json={"type": "TURN_ON"}
@@ -177,8 +180,6 @@ class Crownstone:
 
         This method is a coroutine.
         """
-        # make sure to use the context of what the object was created in.
-        self.cloud.login_manager.set_context(self._context)
         # send a command to the cloud to turn the Crownstone off.
         await self.cloud.request_handler.post(
             'Stones', 'switch', model_id=self.cloud_id, json={"type": "TURN_OFF"}
@@ -192,16 +193,13 @@ class Crownstone:
 
         This method is a coroutine.
         """
-        # make sure to use the context of what the object was created in.
-        self.cloud.login_manager.set_context(self._context)
         # check dimming availability & value, and send a command to the cloud to dim the Crownstone.
         if self.abilities[DIMMING_ABILITY].is_enabled:
             if brightness < 0 or brightness > 100:
                 raise ValueError("Enter a value between 0 and 100")
             else:
                 await self.cloud.request_handler.post(
-                    'Stones', 'switch', model_id=self.cloud_id, json={"type": "PERCENTAGE","percentage": brightness}
+                    'Stones', 'switch', model_id=self.cloud_id, json={"type": "PERCENTAGE", "percentage": brightness}
                 )
         else:
-            _LOGGER.warning("Dimming is not enabled for this crownstone. Go to the crownstone app to enable it")
-            # TODO: raise error, or just try to set brightness anyway?
+            raise CrownstoneAbilityError(AbilityError["NOT_ENABLED"])

@@ -6,9 +6,7 @@ from crownstone_cloud.helpers.aiohttp_client import create_clientsession
 from crownstone_cloud.helpers.conversion import quote_json
 from crownstone_cloud.const import (
     BASE_URL, 
-    LOGIN_URL, 
-    ACCESS_TOKEN, 
-    LOGIN_DATA
+    LOGIN_URL
 )
 from crownstone_cloud.exceptions import (
     CrownstoneAuthenticationError,
@@ -50,10 +48,9 @@ class RequestHandler:
         :return: Dictionary with the response from the cloud.
         """
         if model_id:
-            url = f'{BASE_URL}{model}/{model_id}/{endpoint}?access_token=' \
-                  f'{self.cloud.login_manager.get_from_context(ACCESS_TOKEN)}'
+            url = f'{BASE_URL}{model}/{model_id}/{endpoint}?access_token={self.cloud.access_token}'
         else:
-            url = f'{BASE_URL}{model}{endpoint}?access_token={self.cloud.login_manager.get_from_context(ACCESS_TOKEN)}'
+            url = f'{BASE_URL}{model}{endpoint}?access_token={self.cloud.access_token}'
 
         return await self.request('post', url, json)
 
@@ -75,12 +72,11 @@ class RequestHandler:
         """
         if filter and model_id:
             url = f'{BASE_URL}{model}/{model_id}/{endpoint}?filter={quote_json(filter)}&access_token=' \
-                  f'{self.cloud.login_manager.get_from_context(ACCESS_TOKEN)}'
+                  f'{self.cloud.access_token}'
         elif model_id and not filter:
-            url = f'{BASE_URL}{model}/{model_id}/{endpoint}?access_token=' \
-                  f'{self.cloud.login_manager.get_from_context(ACCESS_TOKEN)}'
+            url = f'{BASE_URL}{model}/{model_id}/{endpoint}?access_token={self.cloud.access_token}'
         else:
-            url = f'{BASE_URL}{model}{endpoint}?access_token={self.cloud.login_manager.get_from_context(ACCESS_TOKEN)}'
+            url = f'{BASE_URL}{model}{endpoint}?access_token={self.cloud.access_token}'
 
         return await self.request('get', url)
 
@@ -103,7 +99,7 @@ class RequestHandler:
         :return: Dictionary with the response from the cloud.
         """
         url = f'{BASE_URL}{model}/{model_id}/{endpoint}?{command}={str(value)}&access_token=' \
-              f'{self.cloud.login_manager.get_from_context(ACCESS_TOKEN)}'
+              f'{self.cloud.access_token}'
 
         return await self.request('put', url)
 
@@ -117,8 +113,7 @@ class RequestHandler:
                 raise CrownstoneConnectionError("Error connecting to the Crownstone Cloud.")
             refresh = await self.raise_on_error(data)
             if refresh:
-                new_url = url.replace(url.split('access_token=', 1)[1],
-                                      self.cloud.login_manager.get_from_context(ACCESS_TOKEN))
+                new_url = url.replace(url.split('access_token=', 1)[1], self.cloud.access_token)
                 await self.request(method, new_url, json=json)
             return data
 
@@ -131,10 +126,9 @@ class RequestHandler:
                 error_type = error['code']
                 try:
                     if error_type == 'INVALID_TOKEN' or error_type == 'AUTHORIZATION_REQUIRED':
-                        _LOGGER.warning("Token expired. Refreshing now...")
                         # Login using existing data
-                        response = await self.request_login(self.cloud.login_manager.get_from_context(LOGIN_DATA))
-                        self.cloud.login_manager.set_in_context(ACCESS_TOKEN, response['id'])
+                        response = await self.request_login(self.cloud.login_data)
+                        self.cloud.access_token = response['id']
                         return True  # re-run the request
                     else:
                         for type, message in AuthError.items():

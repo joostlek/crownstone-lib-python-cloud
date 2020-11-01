@@ -75,7 +75,6 @@ class Sphere:
         self.cloud = cloud
         self.data: Dict[str, Any] = data
         self.user_id: str = user_id
-        self._context = self.cloud.login_manager.get_context()
         self.crownstones = Crownstones(self.cloud, self.cloud_id)
         self.locations = Locations(self.cloud, self.cloud_id)
         self.users = Users(self.cloud, self.cloud_id)
@@ -103,8 +102,6 @@ class Sphere:
 
         This method is a coroutine.
         """
-        # make sure to use the context of what the object was created in.
-        self.cloud.login_manager.set_context(self._context)
         # get & reformat keys.
         keys = await self.cloud.request_handler.get('users', 'keysV2', model_id=self.user_id)
         for key_set in keys:
@@ -120,8 +117,6 @@ class Sphere:
 
         This method is a coroutine.
         """
-        # make sure to use the context of what the object was created in.
-        self.cloud.login_manager.set_context(self._context)
         # get presence and create a list with user id's who are in the sphere.
         self.present_people = []
         presence_data = await self.cloud.request_handler.get('Spheres', 'presentPeople', model_id=self.cloud_id)
