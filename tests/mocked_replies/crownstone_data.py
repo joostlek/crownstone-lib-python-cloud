@@ -1,3 +1,5 @@
+"""Mock replies from the cloud for Crownstone data."""
+
 crownstone_data = [
     {
         "name": "my_awesome_crownstone",
@@ -20,7 +22,7 @@ crownstone_data = [
         "createdAt": "date_created",
         "updatedAt": "date_updated",
         "currentSwitchStateId": "switch_state_id",
-        "currentSwitchStateV2": {
+        "currentSwitchState": {
             "timestamp": "date_updated",
             "switchState": 0
         },
@@ -91,7 +93,7 @@ crownstone_data = [
         "createdAt": "date_created",
         "updatedAt": "date_updated",
         "currentSwitchStateId": "switch_state_id",
-        "currentSwitchStateV2": {
+        "currentSwitchState": {
             "timestamp": "date_updated",
             "switchState": 0
         },
