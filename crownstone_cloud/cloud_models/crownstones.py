@@ -26,7 +26,7 @@ class Crownstones:
     async def async_update_crownstone_data(self) -> None:
         """Get the crownstones data from the cloud."""
         # include abilities and current switch state in the request
-        data_filter = {"include": ["currentSwitchStateV2", {"abilities": "properties"}]}
+        data_filter = {"include": ["currentSwitchState", {"abilities": "properties"}]}
         # request data
         crownstone_data = await self.cloud.request_handler.get(
             'Spheres', 'ownedStones', filter=data_filter, model_id=self.sphere_id
@@ -147,7 +147,7 @@ class Crownstone:
     @property
     def state(self) -> int:
         """Return the last reported switch state (0 - 100) of this Crownstone."""
-        return self.data['currentSwitchStateV2']['switchState']
+        return self.data['currentSwitchState']['switchState']
 
     @state.setter
     def state(self, value: int) -> None:
@@ -156,7 +156,7 @@ class Crownstone:
 
         Only updates state in cloud, does not send a switch command to the actual Crownstone.
         """
-        self.data['currentSwitchStateV2']['switchState'] = value
+        self.data['currentSwitchState']['switchState'] = value
 
     def update_abilities(self) -> None:
         """Add/update the abilities for this Crownstone."""
