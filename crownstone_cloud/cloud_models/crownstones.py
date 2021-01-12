@@ -113,6 +113,8 @@ class Crownstone:
         self.abilities: Dict[str, CrownstoneAbility] = {}
         # power usage (W)
         self.power_usage = 0
+        # energy usage (kWh)
+        self.energy_usage = 0
 
     @property
     def name(self) -> str:
