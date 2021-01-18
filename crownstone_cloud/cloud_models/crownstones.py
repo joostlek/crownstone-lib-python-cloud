@@ -1,11 +1,13 @@
 """Crownstone handler for Crownstone cloud data"""
+import logging
+from typing import Dict, Any
+
 from crownstone_cloud.const import DIMMING_ABILITY
 from crownstone_cloud.exceptions import (
     CrownstoneAbilityError,
     AbilityError
 )
-from typing import Dict, Any
-import logging
+from crownstone_cloud.helpers.containers import EnergyData
 
 _LOGGER = logging.Logger(__name__)
 
@@ -113,8 +115,9 @@ class Crownstone:
         self.abilities: Dict[str, CrownstoneAbility] = {}
         # power usage (W)
         self.power_usage = 0
-        # energy usage (kWh)
-        self.energy_usage = 0
+        # energy usage data object
+        # initially defined with 0 Joule and no timestamp
+        self.energy_usage = EnergyData(0, None)
 
     @property
     def name(self) -> str:
