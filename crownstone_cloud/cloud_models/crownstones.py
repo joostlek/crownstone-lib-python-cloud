@@ -7,7 +7,6 @@ from crownstone_cloud.exceptions import (
     CrownstoneAbilityError,
     AbilityError
 )
-from crownstone_cloud.helpers.containers import EnergyData
 
 _LOGGER = logging.Logger(__name__)
 
@@ -115,9 +114,8 @@ class Crownstone:
         self.abilities: Dict[str, CrownstoneAbility] = {}
         # power usage (W)
         self.power_usage = 0
-        # energy usage data object
-        # initially defined with 0 Joule and no timestamp
-        self.energy_usage = EnergyData(0, None)
+        # energy usage (Joule)
+        self.energy_usage = None
 
     @property
     def name(self) -> str:
