@@ -70,7 +70,7 @@ class Locations:
                     if present_location == location.cloud_id:
                         location.present_people.append(presence['userId'])
 
-    def find(self, location_name: str) -> object or None:
+    def find(self, location_name: str) -> "Location" or None:
         """Search for a sphere by name and return sphere object if found."""
         for location in self.locations.values():
             if location_name == location.name:
@@ -78,9 +78,9 @@ class Locations:
 
         return None
 
-    def find_by_id(self, location_id: str) -> object or None:
+    def find_by_id(self, location_id: str) -> "Location" or None:
         """Search for a sphere by id and return sphere object if found."""
-        return self.locations[location_id]
+        return self.locations.get(location_id)
 
 
 class Location:

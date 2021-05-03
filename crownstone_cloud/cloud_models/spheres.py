@@ -54,7 +54,7 @@ class Spheres:
         for sphere_id in removed_items:
             del self.spheres[sphere_id]
 
-    def find(self, sphere_name: str) -> object or None:
+    def find(self, sphere_name: str) -> "Sphere" or None:
         """Search for a sphere by name and return sphere object if found."""
         for sphere in self.spheres.values():
             if sphere_name == sphere.name:
@@ -62,9 +62,9 @@ class Spheres:
 
         return None
 
-    def find_by_id(self, sphere_id: str) -> object or None:
+    def find_by_id(self, sphere_id: str) -> "Sphere" or None:
         """Search for a sphere by id and return sphere object if found."""
-        return self.spheres[sphere_id]
+        return self.spheres.get(sphere_id)
 
 
 class Sphere:

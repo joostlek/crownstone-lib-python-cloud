@@ -1,5 +1,5 @@
 """User handler for Crownstone cloud data."""
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 
 class Users:
@@ -52,7 +52,7 @@ class Users:
         for user_id in removed_items:
             del self.users[user_id]
 
-    def find_by_first_name(self, first_name: str) -> list:
+    def find_by_first_name(self, first_name: str) -> List["User"] or List:
         """Search for a user by first name and return a list with the users found."""
         found_users = []
         for user in self.users.values():
@@ -61,7 +61,7 @@ class Users:
 
         return found_users
 
-    def find_by_last_name(self, last_name: str) -> list:
+    def find_by_last_name(self, last_name: str) -> List["User"] or List:
         """Search for a user by last name and return a list with the users found."""
         found_users = []
         for user in self.users.values():
@@ -70,9 +70,9 @@ class Users:
 
         return found_users
 
-    def find_by_id(self, user_id: str) -> object or None:
+    def find_by_id(self, user_id: str) -> "User" or None:
         """Search for a user by id and return crownstone object if found."""
-        return self.users[user_id]
+        return self.users.get(user_id)
 
 
 class User:

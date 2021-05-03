@@ -62,21 +62,25 @@ class Crownstones:
         for crownstone_id in removed_items:
             del self.crownstones[crownstone_id]
 
-    def find(self, crownstone_name: str) -> object or None:
+    def find(self, crownstone_name: str) -> "Crownstone" or None:
         """Search for a crownstone by name and return crownstone object if found."""
         for crownstone in self.crownstones.values():
             if crownstone_name == crownstone.name:
                 return crownstone
+        
+        return None
 
-    def find_by_id(self, crownstone_id) -> object or None:
+    def find_by_id(self, crownstone_id) -> "Crownstone" or None:
         """Search for a crownstone by id and return crownstone object if found."""
-        return self.crownstones[crownstone_id]
+        return self.crownstones.get(crownstone_id)
 
-    def find_by_uid(self, crownstone_uid) -> object or None:
+    def find_by_uid(self, crownstone_uid) -> "Crownstone" or None:
         """Search for a crownstone by uid and return crownstone object if found."""
         for crownstone in self.crownstones.values():
             if crownstone_uid == crownstone.unique_id:
                 return crownstone
+
+        return None
 
 
 class CrownstoneAbility:
@@ -112,10 +116,9 @@ class Crownstone:
         self.cloud = cloud
         self.data: Dict[str, Any] = data
         self.abilities: Dict[str, CrownstoneAbility] = {}
-        # power usage (W)
+        # Not cloud data, store your own data here (from Crownstone USB)
         self.power_usage = 0
-        # energy usage (Joule)
-        self.energy_usage = None
+        self.energy_usage = 0
 
     @property
     def name(self) -> str:
