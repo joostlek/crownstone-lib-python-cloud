@@ -1,11 +1,14 @@
 """Main class for the Crownstone cloud cloud."""
-import logging
+from __future__ import annotations
+
 import asyncio
+import logging
+
 import aiohttp
-from typing import Optional
-from crownstone_cloud.helpers.conversion import password_to_hash
+
 from crownstone_cloud.cloud_models.crownstones import Crownstone
 from crownstone_cloud.cloud_models.spheres import Spheres
+from crownstone_cloud.helpers.conversion import password_to_hash
 from crownstone_cloud.helpers.requests import RequestHandler
 
 _LOGGER = logging.getLogger(__name__)
@@ -14,13 +17,17 @@ _LOGGER = logging.getLogger(__name__)
 class CrownstoneCloud:
     """Create a Crownstone cloud instance."""
 
-    def __init__(self, email: str, password: str, clientsession: aiohttp.ClientSession = None) -> None:
-        # Create request handler instance
+    cloud_data: Spheres
+    access_token: str
+
+    def __init__(
+        self,
+        email: str,
+        password: str,
+        clientsession: aiohttp.ClientSession | None = None,
+    ) -> None:
         self.request_handler = RequestHandler(self, clientsession)
-        # Instance data
-        self.login_data = {'email': email, 'password': password_to_hash(password)}
-        self.access_token: Optional[str] = None
-        self.cloud_data: Optional[Spheres] = None
+        self.login_data = {"email": email, "password": password_to_hash(password)}
 
     async def async_initialize(self) -> None:
         """
@@ -32,8 +39,8 @@ class CrownstoneCloud:
         login_response = await self.request_handler.request_login(self.login_data)
 
         # Save access token & create cloud data object
-        self.access_token = login_response['id']
-        self.cloud_data = Spheres(self, login_response['userId'])
+        self.access_token = login_response["id"]
+        self.cloud_data = Spheres(self, login_response["userId"])
         _LOGGER.debug("Login to Crownstone Cloud successful")
 
         # Synchronize data
@@ -56,41 +63,51 @@ class CrownstoneCloud:
                 sphere.crownstones.async_update_crownstone_data(),
                 sphere.locations.async_update_location_data(),
                 sphere.locations.async_update_location_presence(),
-                sphere.users.async_update_user_data()
+                sphere.users.async_update_user_data(),
             )
         _LOGGER.debug("Cloud data successfully initialized")
 
-    def get_crownstone(self, crownstone_name) -> Crownstone:
+    def get_crownstone(self, crownstone_name: str) -> Crownstone:
         """
         Get a crownstone by name without specifying a sphere.
 
         :param crownstone_name: Name of the Crownstone.
         :return: Crownstone object.
         """
-        try:
-            for sphere in self.cloud_data:
-                for crownstone in sphere.crownstones:
-                    if crownstone.name == crownstone_name:
-                        return crownstone
-        except KeyError:
-            _LOGGER.exception("This login_id does not exist. Use 'async_login' to login.")
-        except ValueError:
-            _LOGGER.exception("No sphere data available for this login. Use 'async_synchronize' to load user data.")
+        for sphere in self.cloud_data:
+            for crownstone in sphere.crownstones:
+                if crownstone.name == crownstone_name:
+                    return crownstone
 
-    def get_crownstone_by_id(self, crownstone_id) -> Crownstone:
+        raise KeyError from None
+
+    def get_crownstone_by_id(self, crownstone_id: str) -> Crownstone:
         """
         Get a crownstone by id without specifying a sphere.
 
         :param crownstone_id: The cloud id of the Crownstone.
         :return: Crownstone object.
         """
-        try:
-            for sphere in self.cloud_data:
-                return sphere.crownstones[crownstone_id]
-        except KeyError:
-            _LOGGER.exception("This login_id does not exist. Use 'async_login' to login.")
-        except ValueError:
-            _LOGGER.exception("No sphere data available for this login. Use 'async_synchronize' to load user data.")
+        for sphere in self.cloud_data:
+            for crownstone in sphere.crownstones:
+                if crownstone.cloud_id == crownstone_id:
+                    return crownstone
+
+        raise KeyError from None
+
+    def get_crownstone_by_uid(self, crownstone_uid: int) -> Crownstone:
+        """
+        Get a crownstone by uid without specifying a sphere.
+
+        :param crownstone_uid: The cloud id of the Crownstone.
+        :return: Crownstone object.
+        """
+        for sphere in self.cloud_data:
+            for crownstone in sphere.crownstones:
+                if crownstone.unique_id == crownstone_uid:
+                    return crownstone
+
+        raise KeyError from None
 
     async def async_close_session(self) -> None:
         """

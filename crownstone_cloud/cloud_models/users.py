@@ -1,17 +1,22 @@
 """User handler for Crownstone cloud data."""
-from typing import Dict, Any, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Iterator
+
+if TYPE_CHECKING:
+    from crownstone_cloud.cloud import CrownstoneCloud
 
 
 class Users:
     """Handler for the users in a sphere."""
 
-    def __init__(self, cloud, sphere_id: str) -> None:
+    def __init__(self, cloud: CrownstoneCloud, sphere_id: str) -> None:
         """Initialization."""
         self.cloud = cloud
-        self.users: Dict[str, User] = {}
-        self.sphere_id: str = sphere_id
+        self.sphere_id = sphere_id
+        self.users: dict[str, User] = {}
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[User]:
         """Iterate over users."""
         return iter(self.users.values())
 
@@ -21,18 +26,19 @@ class Users:
 
         This method is a coroutine.
         """
-        user_data = await self.cloud.request_handler.get(
-            'Spheres', 'users', model_id=self.sphere_id
+        data: dict[str, list[dict[str, Any]]] = await self.cloud.request_handler.get(
+            "Spheres", "users", model_id=self.sphere_id
         )
         # process items
-        removed_items = []
-        new_items = []
-        for role, users in user_data.items():
+        removed_items: list[str] = []
+        new_items: list[str] = []
+        for role, users in data.items():
             for user in users:
-                user_id = user['id']
+                user_id = user["id"]
                 exists = self.users.get(user_id)
                 # check if the User already exists
-                # it is important that we don't throw away existing objects, as they need to remain functional
+                # it is important that we don't throw away existing objects,
+                # as they need to remain functional
                 if exists:
                     # update data
                     self.users[user_id].data = user
@@ -52,25 +58,25 @@ class Users:
         for user_id in removed_items:
             del self.users[user_id]
 
-    def find_by_first_name(self, first_name: str) -> List["User"] or List:
+    def find_by_first_name(self, first_name: str) -> list[User]:
         """Search for a user by first name and return a list with the users found."""
-        found_users = []
+        found_users: list[User] = []
         for user in self.users.values():
             if first_name == user.first_name:
                 found_users.append(user)
 
         return found_users
 
-    def find_by_last_name(self, last_name: str) -> List["User"] or List:
+    def find_by_last_name(self, last_name: str) -> list[User]:
         """Search for a user by last name and return a list with the users found."""
-        found_users = []
+        found_users: list[User] = []
         for user in self.users.values():
             if last_name == user.last_name:
                 found_users.append(user)
 
         return found_users
 
-    def find_by_id(self, user_id: str) -> "User" or None:
+    def find_by_id(self, user_id: str) -> User | None:
         """Search for a user by id and return crownstone object if found."""
         return self.users.get(user_id)
 
@@ -78,32 +84,32 @@ class Users:
 class User:
     """Represents a user in a sphere."""
 
-    def __init__(self, data: Dict[str, Any], role: str) -> None:
+    def __init__(self, data: dict[str, Any], role: str) -> None:
         """Initialization."""
-        self.data: Dict[str, Any] = data
-        self.role: str = role
+        self.data = data
+        self.role = role
 
     @property
     def first_name(self) -> str:
         """Return the first name of this User."""
-        return self.data['firstName']
+        return str(self.data["firstName"])
 
     @property
     def last_name(self) -> str:
         """Return the last name of this User."""
-        return self.data['lastName']
+        return str(self.data["lastName"])
 
     @property
     def email(self) -> str:
         """Return the email of this User."""
-        return self.data['email']
+        return str(self.data["email"])
 
     @property
     def cloud_id(self) -> str:
         """Return the cloud id of this User."""
-        return self.data['id']
+        return str(self.data["id"])
 
     @property
     def email_verified(self) -> bool:
         """Return whether the user has verified email."""
-        return self.data['emailVerified']
+        return bool(self.data["emailVerified"])

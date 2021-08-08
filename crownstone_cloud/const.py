@@ -1,7 +1,10 @@
-BASE_URL = "https://cloud.crownstone.rocks/api/"
-LOGIN_URL = "https://cloud.crownstone.rocks/api/users/login"
+"""Constants for the Crownstone cloud library."""
+from typing import Final
+
+BASE_URL: Final = "https://cloud.crownstone.rocks/api/"
+LOGIN_URL: Final = "https://cloud.crownstone.rocks/api/users/login"
 
 # Crownstone abilities
-DIMMING_ABILITY = 'dimming'
-SWITCHCRAFT_ABILITY = 'switchcraft'
-TAP_TO_TOGGLE_ABILITY = 'tapToToggle'
+DIMMING_ABILITY: Final = "dimming"
+SWITCHCRAFT_ABILITY: Final = "switchcraft"
+TAP_TO_TOGGLE_ABILITY: Final = "tapToToggle"

@@ -1,20 +1,26 @@
 """Sphere handler for Crownstone cloud data."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Iterator
+
 from crownstone_cloud.cloud_models.crownstones import Crownstones
 from crownstone_cloud.cloud_models.locations import Locations
 from crownstone_cloud.cloud_models.users import Users
-from typing import Dict, Any
+
+if TYPE_CHECKING:
+    from crownstone_cloud.cloud import CrownstoneCloud
 
 
 class Spheres:
     """Handler for the spheres of the user."""
 
-    def __init__(self, cloud, user_id: str) -> None:
+    def __init__(self, cloud: CrownstoneCloud, user_id: str) -> None:
         """Initialization."""
         self.cloud = cloud
-        self.spheres: Dict[str, Sphere] = {}
-        self.user_id: str = user_id
+        self.user_id = user_id
+        self.spheres: dict[str, Sphere] = {}
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Sphere]:
         """Iterate over spheres."""
         return iter(self.spheres.values())
 
@@ -24,17 +30,18 @@ class Spheres:
 
         This method is a coroutine.
         """
-        sphere_data = await self.cloud.request_handler.get(
-            'users', 'spheres', model_id=self.user_id
+        data: list[dict[str, Any]] = await self.cloud.request_handler.get(
+            "users", "spheres", model_id=self.user_id
         )
         # process items
-        removed_items = []
-        new_items = []
-        for sphere in sphere_data:
-            sphere_id = sphere['id']
+        removed_items: list[str] = []
+        new_items: list[str] = []
+        for sphere in data:
+            sphere_id: str = sphere["id"]
             exists = self.spheres.get(sphere_id)
             # check if the Sphere already exists
-            # it is important that we don't throw away existing objects, as they need to remain functional
+            # it is important that we don't throw away existing objects,
+            # as they need to remain functional
             if exists:
                 # update data
                 self.spheres[sphere_id].data = sphere
@@ -54,7 +61,7 @@ class Spheres:
         for sphere_id in removed_items:
             del self.spheres[sphere_id]
 
-    def find(self, sphere_name: str) -> "Sphere" or None:
+    def find(self, sphere_name: str) -> Sphere | None:
         """Search for a sphere by name and return sphere object if found."""
         for sphere in self.spheres.values():
             if sphere_name == sphere.name:
@@ -62,7 +69,7 @@ class Spheres:
 
         return None
 
-    def find_by_id(self, sphere_id: str) -> "Sphere" or None:
+    def find_by_id(self, sphere_id: str) -> Sphere | None:
         """Search for a sphere by id and return sphere object if found."""
         return self.spheres.get(sphere_id)
 
@@ -70,44 +77,48 @@ class Spheres:
 class Sphere:
     """Represents a Sphere."""
 
-    def __init__(self, cloud, data: Dict[str, Any], user_id: str) -> None:
+    def __init__(
+        self, cloud: CrownstoneCloud, data: dict[str, Any], user_id: str
+    ) -> None:
         """Initialization."""
         self.cloud = cloud
-        self.data: Dict[str, Any] = data
-        self.user_id: str = user_id
+        self.data = data
+        self.user_id = user_id
         self.crownstones = Crownstones(self.cloud, self.cloud_id)
         self.locations = Locations(self.cloud, self.cloud_id)
         self.users = Users(self.cloud, self.cloud_id)
-        self.keys: Dict[str, str] = {}
-        self.present_people: list = []
+        self.keys: dict[str, str] = {}
+        self.present_people: list[str] = []
 
     @property
     def name(self) -> str:
         """Returns the name of this Sphere."""
-        return self.data['name']
+        return str(self.data["name"])
 
     @property
     def cloud_id(self) -> str:
         """Return the cloud id of this Sphere."""
-        return self.data['id']
+        return str(self.data["id"])
 
     @property
     def unique_id(self) -> int:
         """Return the unique id of this Sphere."""
-        return self.data['uid']
+        return int(self.data["uid"])
 
-    async def async_get_keys(self) -> dict:
+    async def async_get_keys(self) -> dict[str, str]:
         """
         Get the user keys for this sphere, that can be used for BLE (optional).
 
         This method is a coroutine.
         """
         # get & reformat keys.
-        keys = await self.cloud.request_handler.get('users', 'keysV2', model_id=self.user_id)
+        keys: list[dict[str, Any]] = await self.cloud.request_handler.get(
+            "users", "keysV2", model_id=self.user_id
+        )
         for key_set in keys:
-            if key_set['sphereId'] == self.cloud_id:
-                for keyType in key_set['sphereKeys']:
-                    self.keys[keyType['keyType']] = keyType['key']
+            if key_set["sphereId"] == self.cloud_id:
+                for key_type in key_set["sphereKeys"]:
+                    self.keys[key_type["keyType"]] = key_type["key"]
 
         return self.keys
 
@@ -119,6 +130,8 @@ class Sphere:
         """
         # get presence and create a list with user id's who are in the sphere.
         self.present_people = []
-        presence_data = await self.cloud.request_handler.get('Spheres', 'presentPeople', model_id=self.cloud_id)
+        presence_data: list[dict[str, Any]] = await self.cloud.request_handler.get(
+            "Spheres", "presentPeople", model_id=self.cloud_id
+        )
         for user in presence_data:
-            self.present_people.append(user['userId'])
+            self.present_people.append(user["userId"])

@@ -1,17 +1,22 @@
 """Location handler for Crownstone cloud data."""
-from typing import Dict, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Iterator
+
+if TYPE_CHECKING:
+    from crownstone_cloud.cloud import CrownstoneCloud
 
 
 class Locations:
     """Handler for the locations of a sphere."""
 
-    def __init__(self, cloud, sphere_id: str) -> None:
+    def __init__(self, cloud: CrownstoneCloud, sphere_id: str) -> None:
         """Initialization."""
         self.cloud = cloud
-        self.locations: Dict[str, Location] = {}
-        self.sphere_id: str = sphere_id
+        self.sphere_id = sphere_id
+        self.locations: dict[str, Location] = {}
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Location]:
         """Iterate over locations."""
         return iter(self.locations.values())
 
@@ -21,17 +26,18 @@ class Locations:
 
         This method is a coroutine.
         """
-        location_data = await self.cloud.request_handler.get(
-            'Spheres', 'ownedLocations', model_id=self.sphere_id
+        data: list[dict[str, Any]] = await self.cloud.request_handler.get(
+            "Spheres", "ownedLocations", model_id=self.sphere_id
         )
         # process items
-        removed_items = []
-        new_items = []
-        for location in location_data:
-            location_id = location['id']
+        removed_items: list[str] = []
+        new_items: list[str] = []
+        for location in data:
+            location_id: str = location["id"]
             exists = self.locations.get(location_id)
             # check if the location already exists
-            # it is important that we don't throw away existing objects, as they need to remain functional
+            # it is important that we don't throw away existing objects,
+            # as they need to remain functional
             if exists:
                 # update data
                 self.locations[location_id].data = location
@@ -57,20 +63,20 @@ class Locations:
 
         This method is a coroutine.
         """
-        presence_data = await self.cloud.request_handler.get(
-            'Spheres', 'presentPeople', model_id=self.sphere_id
+        presence_data: list[dict[str, Any]] = await self.cloud.request_handler.get(
+            "Spheres", "presentPeople", model_id=self.sphere_id
         )
         # reset the presence
         for location in self.locations.values():
             location.present_people = []
         # add new presence
         for presence in presence_data:
-            for present_location in presence['locations']:
+            for present_location in presence["locations"]:
                 for location in self.locations.values():
                     if present_location == location.cloud_id:
-                        location.present_people.append(presence['userId'])
+                        location.present_people.append(presence["userId"])
 
-    def find(self, location_name: str) -> "Location" or None:
+    def find(self, location_name: str) -> Location | None:
         """Search for a sphere by name and return sphere object if found."""
         for location in self.locations.values():
             if location_name == location.name:
@@ -78,7 +84,7 @@ class Locations:
 
         return None
 
-    def find_by_id(self, location_id: str) -> "Location" or None:
+    def find_by_id(self, location_id: str) -> Location | None:
         """Search for a sphere by id and return sphere object if found."""
         return self.locations.get(location_id)
 
@@ -86,22 +92,22 @@ class Locations:
 class Location:
     """Represents a Location."""
 
-    def __init__(self, data: Dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any]) -> None:
         """Initialization."""
-        self.data: Dict[str, Any] = data
-        self.present_people: list = []
+        self.data = data
+        self.present_people: list[str] = []
 
     @property
     def name(self) -> str:
         """Return the name of this Location."""
-        return self.data['name']
+        return str(self.data["name"])
 
     @property
     def cloud_id(self) -> str:
         """Return the cloud id of this Location."""
-        return self.data['id']
+        return str(self.data["id"])
 
     @property
     def unique_id(self) -> int:
         """Return the unique id of this Location."""
-        return self.data['uid']
+        return int(self.data["uid"])
