@@ -67,42 +67,63 @@ class CrownstoneCloud:
             )
         _LOGGER.debug("Cloud data successfully initialized")
 
-    def get_crownstone(self, crownstone_name: str) -> Crownstone:
+    def get_crownstone(
+        self, crownstone_name: str, sphere_id: str | None = None
+    ) -> Crownstone:
         """
         Get a crownstone by name without specifying a sphere.
 
         :param crownstone_name: Name of the Crownstone.
+        :param sphere_id: Sphere id that should match.
         :return: Crownstone object.
         """
         for sphere in self.cloud_data:
+            if sphere_id is not None:
+                if sphere.cloud_id != sphere_id:
+                    continue
+
             for crownstone in sphere.crownstones:
                 if crownstone.name == crownstone_name:
                     return crownstone
 
         raise KeyError from None
 
-    def get_crownstone_by_id(self, crownstone_id: str) -> Crownstone:
+    def get_crownstone_by_id(
+        self, crownstone_id: str, sphere_id: str | None = None
+    ) -> Crownstone:
         """
         Get a crownstone by id without specifying a sphere.
 
         :param crownstone_id: The cloud id of the Crownstone.
+        :param sphere_id: Sphere id that should match.
         :return: Crownstone object.
         """
         for sphere in self.cloud_data:
+            if sphere_id is not None:
+                if sphere.cloud_id != sphere_id:
+                    continue
+
             for crownstone in sphere.crownstones:
                 if crownstone.cloud_id == crownstone_id:
                     return crownstone
 
         raise KeyError from None
 
-    def get_crownstone_by_uid(self, crownstone_uid: int) -> Crownstone:
+    def get_crownstone_by_uid(
+        self, crownstone_uid: int, sphere_id: str | None = None
+    ) -> Crownstone:
         """
         Get a crownstone by uid without specifying a sphere.
 
-        :param crownstone_uid: The cloud id of the Crownstone.
+        :param crownstone_uid: The unique id of the Crownstone.
+        :param sphere_id: Sphere id that should match.
         :return: Crownstone object.
         """
         for sphere in self.cloud_data:
+            if sphere_id is not None:
+                if sphere.cloud_id != sphere_id:
+                    continue
+                
             for crownstone in sphere.crownstones:
                 if crownstone.unique_id == crownstone_uid:
                     return crownstone

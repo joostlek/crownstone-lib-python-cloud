@@ -12,7 +12,7 @@ Asynchronous Python library to get data from the cloud, and switch Crownstones.
 
 ## Requirements
 
-* Python 3.7 or higher
+* Python 3.8 or higher
 * Aiohttp 3.7.4
 
 ## Standard installation
@@ -234,14 +234,17 @@ A User has the following fields in the cloud lib:
 > Synchronize all data for a user. Use case is to update the local data with new data from the cloud.
 > This function is already called in `async_initialize()`.
 
-#### get_crownstone(crownstone_name: String) -> Crownstone
+#### get_crownstone(crownstone_name: String, sphere_id: String = None) -> Crownstone
 > Get a Crownstone object by name for a user. Raises KeyError if it doesn't exist.
+> You can optionally provide a sphere id to match where the Crownstone should be found.
 
-#### get_crownstone_by_id(crownstone_id: String) -> Crownstone
+#### get_crownstone_by_id(crownstone_id: String, sphere_id: String = None) -> Crownstone
 > Get a Crownstone object by it's id for a user. Raises KeyError if it doesn't exist.
+> You can optionally provide a sphere id to match where the Crownstone should be found.
 
-#### get_crownstone_by_uid(crownstone_uid: int) -> Crownstone
+#### get_crownstone_by_uid(crownstone_uid: int, sphere_id: String = None) -> Crownstone
 > Get a Crownstone object by it's uid for a user. Raises KeyError if it doesn't exist.
+> You can optionally provide a sphere id to match where the Crownstone should be found.
 
 #### async_close_session()
 > Async function. This will close the websession in requestHandler to cleanup nicely after the program has finished.

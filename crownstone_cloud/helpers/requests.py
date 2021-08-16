@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any
 
 from aiohttp import ClientSession, ContentTypeError
 
@@ -21,14 +21,6 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-CloudDataReturnType = TypeVar(
-    "CloudDataReturnType",
-    dict[str, Any],
-    list[dict[str, Any]],
-    dict[str, dict[str, Any]],
-    dict[str, list[dict[str, Any]]],
-)
-
 
 class RequestHandler:
     """Handles requests to the Crownstone cloud."""
@@ -39,7 +31,7 @@ class RequestHandler:
         self.cloud = cloud
         self.client_session = clientsession or create_clientsession()
 
-    async def request_login(self, login_data: dict[str, Any]) -> dict[str, Any]:
+    async def request_login(self, login_data: dict[str, Any]) -> Any:
         """Request a login to the Crownstone Cloud API."""
         response = await self.request("post", LOGIN_URL, login_data)
 
@@ -51,7 +43,7 @@ class RequestHandler:
         endpoint: str,
         model_id: str | None = None,
         json: dict[str, Any] | None = None,
-    ) -> CloudDataReturnType:
+    ) -> Any:
         """
         Post request
 
@@ -74,7 +66,7 @@ class RequestHandler:
         endpoint: str,
         data_filter: dict[str, Any] | None = None,
         model_id: str | None = None,
-    ) -> CloudDataReturnType:
+    ) -> Any:
         """
         Get request
 
@@ -98,7 +90,7 @@ class RequestHandler:
 
     async def put(
         self, model: str, endpoint: str, model_id: str, command: str, value: Any
-    ) -> CloudDataReturnType:
+    ) -> Any:
         """
         Put request
 
@@ -118,11 +110,11 @@ class RequestHandler:
 
     async def request(
         self, method: str, url: str, json: dict[str, Any] | None = None
-    ) -> CloudDataReturnType:
+    ) -> Any:
         """Make request and check data for errors."""
         async with self.client_session.request(method, url, json=json) as result:
             try:
-                data: CloudDataReturnType = await result.json()
+                data: Any = await result.json()
             except ContentTypeError as err:
                 # when the cloud is unavailable,
                 # a payload can be received that can't be converted to a dictionary.
@@ -140,7 +132,7 @@ class RequestHandler:
     async def raise_on_error(self, data: Any) -> bool:
         """Check for error messages and raise the correct exception."""
         if isinstance(data, dict) and "error" in data:
-            error = data["error"]
+            error: dict[str, Any] = data["error"]
             if "code" in error:
                 error_type = error["code"]
                 try:

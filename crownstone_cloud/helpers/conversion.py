@@ -1,11 +1,13 @@
 """Contains functions that convert a parameter into something else."""
+from __future__ import annotations
+
 import hashlib
 import json
 from typing import Any
 from urllib.parse import quote
 
 
-def password_to_hash(password: str) -> str:
+def password_to_hash(password: str) -> str | None:
     """Generate a sha1 password from string."""
     if password is None:
         return None
