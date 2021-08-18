@@ -132,3 +132,4 @@ dmypy.json
 .vscode/
 
 release.sh
+release_cloud.sh
