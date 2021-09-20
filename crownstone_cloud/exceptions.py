@@ -35,3 +35,7 @@ class CrownstoneConnectionError(Exception):
 
 class CrownstoneAbilityError(CrownstoneException):
     """Raised when when e.g. dimming command is requested when it is not enabled."""
+
+
+class CrownstoneNotFoundError(Exception):
+    """Raised when searching for a Crownstone object, but it is not found."""

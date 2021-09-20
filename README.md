@@ -235,15 +235,15 @@ A User has the following fields in the cloud lib:
 > This function is already called in `async_initialize()`.
 
 #### get_crownstone(crownstone_name: String, sphere_id: String = None) -> Crownstone
-> Get a Crownstone object by name for a user. Raises KeyError if it doesn't exist.
+> Get a Crownstone object by name for a user. Raises CrownstoneNotFoundError if it doesn't exist.
 > You can optionally provide a sphere id to match where the Crownstone should be found.
 
 #### get_crownstone_by_id(crownstone_id: String, sphere_id: String = None) -> Crownstone
-> Get a Crownstone object by it's id for a user. Raises KeyError if it doesn't exist.
+> Get a Crownstone object by it's id for a user. Raises CrownstoneNotFoundError if it doesn't exist.
 > You can optionally provide a sphere id to match where the Crownstone should be found.
 
 #### get_crownstone_by_uid(crownstone_uid: int, sphere_id: String = None) -> Crownstone
-> Get a Crownstone object by it's uid for a user. Raises KeyError if it doesn't exist.
+> Get a Crownstone object by it's uid for a user. Raises CrownstoneNotFoundError if it doesn't exist.
 > You can optionally provide a sphere id to match where the Crownstone should be found.
 
 #### async_close_session()

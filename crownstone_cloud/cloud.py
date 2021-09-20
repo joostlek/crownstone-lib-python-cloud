@@ -8,6 +8,7 @@ import aiohttp
 
 from crownstone_cloud.cloud_models.crownstones import Crownstone
 from crownstone_cloud.cloud_models.spheres import Spheres
+from crownstone_cloud.exceptions import CrownstoneNotFoundError
 from crownstone_cloud.helpers.conversion import password_to_hash
 from crownstone_cloud.helpers.requests import RequestHandler
 
@@ -86,7 +87,7 @@ class CrownstoneCloud:
                 if crownstone.name == crownstone_name:
                     return crownstone
 
-        raise KeyError from None
+        raise CrownstoneNotFoundError from None
 
     def get_crownstone_by_id(
         self, crownstone_id: str, sphere_id: str | None = None
@@ -107,7 +108,7 @@ class CrownstoneCloud:
                 if crownstone.cloud_id == crownstone_id:
                     return crownstone
 
-        raise KeyError from None
+        raise CrownstoneNotFoundError from None
 
     def get_crownstone_by_uid(
         self, crownstone_uid: int, sphere_id: str | None = None
@@ -128,7 +129,7 @@ class CrownstoneCloud:
                 if crownstone.unique_id == crownstone_uid:
                     return crownstone
 
-        raise KeyError from None
+        raise CrownstoneNotFoundError from None
 
     async def async_close_session(self) -> None:
         """
