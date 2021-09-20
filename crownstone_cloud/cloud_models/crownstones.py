@@ -17,54 +17,54 @@ class Crownstones:
         """Initialization."""
         self.cloud = cloud
         self.sphere_id = sphere_id
-        self.crownstones: dict[str, Crownstone] = {}
+        self.data: dict[str, Crownstone] = {}
 
     def __iter__(self) -> Iterator[Crownstone]:
         """Iterate over crownstones."""
-        return iter(self.crownstones.values())
+        return iter(self.data.values())
 
     async def async_update_crownstone_data(self) -> None:
         """Get the crownstones data from the cloud."""
         # include abilities and current switch state in the request
         data_filter = {"include": ["currentSwitchState", {"abilities": "properties"}]}
         # request data
-        data: list[dict[str, Any]] = await self.cloud.request_handler.get(
+        cloud_data: list[dict[str, Any]] = await self.cloud.request_handler.get(
             "Spheres", "ownedStones", data_filter=data_filter, model_id=self.sphere_id
         )
         # process items
         removed_items: list[str] = []
         new_items: list[str] = []
-        for crownstone in data:
+        for crownstone in cloud_data:
             crownstone_id: str = crownstone["id"]
-            exists = self.crownstones.get(crownstone_id)
+            exists = self.data.get(crownstone_id)
             # check if the crownstone already exists
             # it is important that we don't throw away existing objects,
             # as they need to remain functional
             if exists:
                 # update data and update abilities
-                self.crownstones[crownstone_id].data = crownstone
+                self.data[crownstone_id].data = crownstone
             else:
                 # add new Crownstone
-                self.crownstones[crownstone_id] = Crownstone(self.cloud, crownstone)
+                self.data[crownstone_id] = Crownstone(self.cloud, crownstone)
 
             # update the abilities of the Crownstone from the data
-            self.crownstones[crownstone_id].update_abilities()
+            self.data[crownstone_id].update_abilities()
 
             # generate list with new id's to check with the existing id's
             new_items.append(crownstone_id)
 
         # check for removed items
-        for crownstone_id in self.crownstones:
+        for crownstone_id in self.data:
             if crownstone_id not in new_items:
                 removed_items.append(crownstone_id)
 
         # remove items from dict
         for crownstone_id in removed_items:
-            del self.crownstones[crownstone_id]
+            del self.data[crownstone_id]
 
     def find(self, crownstone_name: str) -> Crownstone | None:
         """Search for a crownstone by name and return crownstone object if found."""
-        for crownstone in self.crownstones.values():
+        for crownstone in self.data.values():
             if crownstone_name == crownstone.name:
                 return crownstone
 
@@ -72,11 +72,11 @@ class Crownstones:
 
     def find_by_id(self, crownstone_id: str) -> Crownstone | None:
         """Search for a crownstone by id and return crownstone object if found."""
-        return self.crownstones.get(crownstone_id)
+        return self.data.get(crownstone_id)
 
     def find_by_uid(self, crownstone_uid: int) -> Crownstone | None:
         """Search for a crownstone by uid and return crownstone object if found."""
-        for crownstone in self.crownstones.values():
+        for crownstone in self.data.values():
             if crownstone_uid == crownstone.unique_id:
                 return crownstone
 

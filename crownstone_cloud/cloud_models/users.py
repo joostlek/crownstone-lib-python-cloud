@@ -14,11 +14,11 @@ class Users:
         """Initialization."""
         self.cloud = cloud
         self.sphere_id = sphere_id
-        self.users: dict[str, User] = {}
+        self.data: dict[str, User] = {}
 
     def __iter__(self) -> Iterator[User]:
         """Iterate over users."""
-        return iter(self.users.values())
+        return iter(self.data.values())
 
     async def async_update_user_data(self) -> None:
         """
@@ -26,42 +26,44 @@ class Users:
 
         This method is a coroutine.
         """
-        data: dict[str, list[dict[str, Any]]] = await self.cloud.request_handler.get(
+        cloud_data: dict[
+            str, list[dict[str, Any]]
+        ] = await self.cloud.request_handler.get(
             "Spheres", "users", model_id=self.sphere_id
         )
         # process items
         removed_items: list[str] = []
         new_items: list[str] = []
-        for role, users in data.items():
+        for role, users in cloud_data.items():
             for user in users:
                 user_id = user["id"]
-                exists = self.users.get(user_id)
+                exists = self.data.get(user_id)
                 # check if the User already exists
                 # it is important that we don't throw away existing objects,
                 # as they need to remain functional
                 if exists:
                     # update data
-                    self.users[user_id].data = user
+                    self.data[user_id].data = user
                 else:
                     # add new User + their role
-                    self.users[user_id] = User(user, role)
+                    self.data[user_id] = User(user, role)
 
                 # generate list with new id's to check with the existing id's
                 new_items.append(user_id)
 
         # check for removed items
-        for user_id in self.users:
+        for user_id in self.data:
             if user_id not in new_items:
                 removed_items.append(user_id)
 
         # remove items from dict
         for user_id in removed_items:
-            del self.users[user_id]
+            del self.data[user_id]
 
     def find_by_first_name(self, first_name: str) -> list[User]:
         """Search for a user by first name and return a list with the users found."""
         found_users: list[User] = []
-        for user in self.users.values():
+        for user in self.data.values():
             if first_name == user.first_name:
                 found_users.append(user)
 
@@ -70,7 +72,7 @@ class Users:
     def find_by_last_name(self, last_name: str) -> list[User]:
         """Search for a user by last name and return a list with the users found."""
         found_users: list[User] = []
-        for user in self.users.values():
+        for user in self.data.values():
             if last_name == user.last_name:
                 found_users.append(user)
 
@@ -78,7 +80,7 @@ class Users:
 
     def find_by_id(self, user_id: str) -> User | None:
         """Search for a user by id and return crownstone object if found."""
-        return self.users.get(user_id)
+        return self.data.get(user_id)
 
 
 class User:

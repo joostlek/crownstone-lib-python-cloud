@@ -18,11 +18,11 @@ class Spheres:
         """Initialization."""
         self.cloud = cloud
         self.user_id = user_id
-        self.spheres: dict[str, Sphere] = {}
+        self.data: dict[str, Sphere] = {}
 
     def __iter__(self) -> Iterator[Sphere]:
         """Iterate over spheres."""
-        return iter(self.spheres.values())
+        return iter(self.data.values())
 
     async def async_update_sphere_data(self) -> None:
         """
@@ -30,40 +30,40 @@ class Spheres:
 
         This method is a coroutine.
         """
-        data: list[dict[str, Any]] = await self.cloud.request_handler.get(
+        cloud_data: list[dict[str, Any]] = await self.cloud.request_handler.get(
             "users", "spheres", model_id=self.user_id
         )
         # process items
         removed_items: list[str] = []
         new_items: list[str] = []
-        for sphere in data:
+        for sphere in cloud_data:
             sphere_id: str = sphere["id"]
-            exists = self.spheres.get(sphere_id)
+            exists = self.data.get(sphere_id)
             # check if the Sphere already exists
             # it is important that we don't throw away existing objects,
             # as they need to remain functional
             if exists:
                 # update data
-                self.spheres[sphere_id].data = sphere
+                self.data[sphere_id].data = sphere
             else:
                 # add new Sphere
-                self.spheres[sphere_id] = Sphere(self.cloud, sphere, self.user_id)
+                self.data[sphere_id] = Sphere(self.cloud, sphere, self.user_id)
 
             # generate list with new id's to check with the existing id's
             new_items.append(sphere_id)
 
         # check for removed items
-        for sphere_id in self.spheres:
+        for sphere_id in self.data:
             if sphere_id not in new_items:
                 removed_items.append(sphere_id)
 
         # remove items from dict
         for sphere_id in removed_items:
-            del self.spheres[sphere_id]
+            del self.data[sphere_id]
 
     def find(self, sphere_name: str) -> Sphere | None:
         """Search for a sphere by name and return sphere object if found."""
-        for sphere in self.spheres.values():
+        for sphere in self.data.values():
             if sphere_name == sphere.name:
                 return sphere
 
@@ -71,7 +71,7 @@ class Spheres:
 
     def find_by_id(self, sphere_id: str) -> Sphere | None:
         """Search for a sphere by id and return sphere object if found."""
-        return self.spheres.get(sphere_id)
+        return self.data.get(sphere_id)
 
 
 class Sphere:

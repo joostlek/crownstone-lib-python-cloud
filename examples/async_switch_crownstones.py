@@ -2,7 +2,7 @@
 This is an example how to switch a crownstone using the crownstone python lib cloud.
 Using this library in async context is the recommended way.
 
-Last update by Ricardo Steijn on 31-10-2020
+Last update by Ricardo Steijn on 20-09-2021
 """
 from crownstone_cloud import CrownstoneCloud, create_clientsession
 import logging
@@ -39,9 +39,9 @@ async def main():
     # To sync all data at once, use async_synchronize() instead.
     my_sphere = cloud_user_1.cloud_data.find("my_sphere_name")
     # request to sync only the locations with the cloud
-    my_sphere.locations.async_update_location_data()
+    await my_sphere.locations.async_update_location_data()
     # get the keys for this sphere so you can use them with the Crownstone BLE python library
-    sphere_keys = my_sphere.async_get_keys()
+    sphere_keys = await my_sphere.async_get_keys()
 
     # Close the aiohttp clientsession after we are done.
     await websession.close()

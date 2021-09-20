@@ -14,11 +14,11 @@ class Locations:
         """Initialization."""
         self.cloud = cloud
         self.sphere_id = sphere_id
-        self.locations: dict[str, Location] = {}
+        self.data: dict[str, Location] = {}
 
     def __iter__(self) -> Iterator[Location]:
         """Iterate over locations."""
-        return iter(self.locations.values())
+        return iter(self.data.values())
 
     async def async_update_location_data(self) -> None:
         """
@@ -26,36 +26,36 @@ class Locations:
 
         This method is a coroutine.
         """
-        data: list[dict[str, Any]] = await self.cloud.request_handler.get(
+        cloud_data: list[dict[str, Any]] = await self.cloud.request_handler.get(
             "Spheres", "ownedLocations", model_id=self.sphere_id
         )
         # process items
         removed_items: list[str] = []
         new_items: list[str] = []
-        for location in data:
+        for location in cloud_data:
             location_id: str = location["id"]
-            exists = self.locations.get(location_id)
+            exists = self.data.get(location_id)
             # check if the location already exists
             # it is important that we don't throw away existing objects,
             # as they need to remain functional
             if exists:
                 # update data
-                self.locations[location_id].data = location
+                self.data[location_id].data = location
             else:
                 # add new Location
-                self.locations[location_id] = Location(location)
+                self.data[location_id] = Location(location)
 
             # generate list with new id's to check with the existing id's
             new_items.append(location_id)
 
         # check for removed items
-        for location_id in self.locations:
+        for location_id in self.data:
             if location_id not in new_items:
                 removed_items.append(location_id)
 
         # remove items from dict
         for location_id in removed_items:
-            del self.locations[location_id]
+            del self.data[location_id]
 
     async def async_update_location_presence(self) -> None:
         """
@@ -67,18 +67,18 @@ class Locations:
             "Spheres", "presentPeople", model_id=self.sphere_id
         )
         # reset the presence
-        for location in self.locations.values():
+        for location in self.data.values():
             location.present_people = []
         # add new presence
         for presence in presence_data:
             for present_location in presence["locations"]:
-                for location in self.locations.values():
+                for location in self.data.values():
                     if present_location == location.cloud_id:
                         location.present_people.append(presence["userId"])
 
     def find(self, location_name: str) -> Location | None:
         """Search for a sphere by name and return sphere object if found."""
-        for location in self.locations.values():
+        for location in self.data.values():
             if location_name == location.name:
                 return location
 
@@ -86,7 +86,7 @@ class Locations:
 
     def find_by_id(self, location_id: str) -> Location | None:
         """Search for a sphere by id and return sphere object if found."""
-        return self.locations.get(location_id)
+        return self.data.get(location_id)
 
 
 class Location:

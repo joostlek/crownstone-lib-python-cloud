@@ -72,7 +72,7 @@ class CrownstoneCloud:
         self, crownstone_name: str, sphere_id: str | None = None
     ) -> Crownstone:
         """
-        Get a crownstone by name without specifying a sphere.
+        Get a Crownstone object by providing the name and optionally a sphere id.
 
         :param crownstone_name: Name of the Crownstone.
         :param sphere_id: Sphere id that should match.
@@ -93,7 +93,7 @@ class CrownstoneCloud:
         self, crownstone_id: str, sphere_id: str | None = None
     ) -> Crownstone:
         """
-        Get a crownstone by id without specifying a sphere.
+        Get a Crownstone object by providing the id and optionally a sphere id.
 
         :param crownstone_id: The cloud id of the Crownstone.
         :param sphere_id: Sphere id that should match.
@@ -114,7 +114,7 @@ class CrownstoneCloud:
         self, crownstone_uid: int, sphere_id: str | None = None
     ) -> Crownstone:
         """
-        Get a crownstone by uid without specifying a sphere.
+        Get a Crownstone object by providing the uid and optionally a sphere id.
 
         :param crownstone_uid: The unique id of the Crownstone.
         :param sphere_id: Sphere id that should match.
@@ -124,7 +124,7 @@ class CrownstoneCloud:
             if sphere_id is not None:
                 if sphere.cloud_id != sphere_id:
                     continue
-                
+
             for crownstone in sphere.crownstones:
                 if crownstone.unique_id == crownstone_uid:
                     return crownstone

@@ -80,9 +80,9 @@ async def main():
     # To sync all data at once, use async_synchronize() instead.
     my_sphere = cloud_user_1.cloud_data.find("my_sphere_name")
     # request to sync only the locations with the cloud
-    my_sphere.locations.async_update_location_data()
+    await my_sphere.locations.async_update_location_data()
     # get the keys for this sphere so you can use them with the Crownstone BLE python library
-    sphere_keys = my_sphere.async_get_keys()
+    sphere_keys = await my_sphere.async_get_keys()
 
     # Close the aiohttp clientsession after we are done.
     await websession.close()
