@@ -1,3 +1,4 @@
+"""Tests for the Crownstone Cloud library."""
 import asynctest
 import aiohttp
 
@@ -31,6 +32,7 @@ class TestCrownstoneCloud(asynctest.TestCase):
     """Test the main class"""
 
     async def test_init(self):
+        """Initialize test case."""
         cloud = CrownstoneCloud('email', 'password')
         assert isinstance(cloud.request_handler.client_session, aiohttp.ClientSession)
 
@@ -39,17 +41,20 @@ class TestCrownstoneCloud(asynctest.TestCase):
     @asynctest.patch.object(RequestHandler, 'request_login')
     @asynctest.patch.object(CrownstoneCloud, 'async_synchronize')
     async def test_initialize(self, mock_sync, mock_request):
+        """Test fetching the cloud data."""
         cloud = CrownstoneCloud('email', 'password')
         # patch the result of login request
         mock_request.return_value = login_data
         await cloud.async_initialize()
         assert cloud.access_token == 'my_access_token'
         assert cloud.cloud_data.user_id == 'user_id'
+        assert mock_sync.call_count == 1
 
         await cloud.async_close_session()
 
     @asynctest.patch.object(RequestHandler, 'get')
     async def test_data_structure(self, mock_request):
+        """Test if data structure is correctly initialized with the cloud data."""
         cloud = CrownstoneCloud('email', 'password')
         # create fake instance
         cloud.spheres = Spheres(cloud, 'user_id')
@@ -111,13 +116,13 @@ class TestCrownstoneCloud(asynctest.TestCase):
         mock_request.return_value = location_data_removed
         await sphere.locations.async_update_location_data()
         # test when the location data gets updated
-        assert 'my_awesome_location_id_2' not in sphere.locations.locations
-        assert 'my_awesome_location_id_3' in sphere.locations.locations
+        assert 'my_awesome_location_id_2' not in sphere.locations.data
+        assert 'my_awesome_location_id_3' in sphere.locations.data
 
         mock_request.return_value = location_data_init
         await sphere.locations.async_update_location_data()
         # test when the presence data gets updated
-        assert 'my_awesome_location_id_2' in sphere.locations.locations
+        assert 'my_awesome_location_id_2' in sphere.locations.data
 
         user_first = sphere.users.find_by_first_name('I am')
         user_last = sphere.users.find_by_last_name('Awesome')
