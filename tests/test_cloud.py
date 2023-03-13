@@ -1,5 +1,7 @@
 """Tests for the Crownstone Cloud library."""
-import asynctest
+from unittest import IsolatedAsyncioTestCase
+from unittest.mock import patch
+
 import aiohttp
 
 from crownstone_cloud import CrownstoneCloud
@@ -28,7 +30,7 @@ from tests.mocked_replies.location_data import (
 )
 
 
-class TestCrownstoneCloud(asynctest.TestCase):
+class TestCrownstoneCloud(IsolatedAsyncioTestCase):
     """Test the main class"""
 
     async def test_init(self):
@@ -38,8 +40,8 @@ class TestCrownstoneCloud(asynctest.TestCase):
 
         await cloud.async_close_session()
 
-    @asynctest.patch.object(RequestHandler, 'request_login')
-    @asynctest.patch.object(CrownstoneCloud, 'async_synchronize')
+    @patch.object(RequestHandler, 'request_login')
+    @patch.object(CrownstoneCloud, 'async_synchronize')
     async def test_initialize(self, mock_sync, mock_request):
         """Test fetching the cloud data."""
         cloud = CrownstoneCloud('email', 'password')
@@ -52,7 +54,7 @@ class TestCrownstoneCloud(asynctest.TestCase):
 
         await cloud.async_close_session()
 
-    @asynctest.patch.object(RequestHandler, 'get')
+    @patch.object(RequestHandler, 'get')
     async def test_data_structure(self, mock_request):
         """Test if data structure is correctly initialized with the cloud data."""
         cloud = CrownstoneCloud('email', 'password')
@@ -133,7 +135,7 @@ class TestCrownstoneCloud(asynctest.TestCase):
         assert user_by_id.last_name == 'Awesome'
 
         # test setting brightness of a crownstone
-        with asynctest.patch.object(RequestHandler, 'put') as brightness_mock:
+        with patch.object(RequestHandler, 'put') as brightness_mock:
             # test if it doesn't run if dimming not enabled
             with self.assertRaises(CrownstoneAbilityError) as ability_err:
                 await crownstone_by_id.async_set_brightness(50)
