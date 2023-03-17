@@ -1,4 +1,6 @@
-import asynctest
+from unittest import IsolatedAsyncioTestCase
+from unittest.mock import patch
+
 from crownstone_cloud.helpers.requests import RequestHandler
 from crownstone_cloud import CrownstoneCloud
 from tests.mocked_replies.errors import (
@@ -9,7 +11,7 @@ from tests.mocked_replies.errors import (
 from crownstone_cloud.exceptions import CrownstoneAuthenticationError
 
 
-class TestCrownstoneCloud(asynctest.TestCase):
+class TestCrownstoneCloud(IsolatedAsyncioTestCase):
     """Test the request handler"""
 
     async def test_exceptions(self):
@@ -32,7 +34,7 @@ class TestCrownstoneCloud(asynctest.TestCase):
         cloud = CrownstoneCloud('email', 'password')
 
         # mock access_token expired
-        with asynctest.patch.object(RequestHandler, 'request_login') as refresh_mock:
+        with patch.object(RequestHandler, 'request_login') as refresh_mock:
             result = await cloud.request_handler.raise_on_error(access_token_expired)
 
         assert result is True
